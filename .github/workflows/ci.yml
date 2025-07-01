@@ -14,19 +14,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: "20"
-          cache: "npm"
+          bun-version: "latest"
 
       - name: install packages
-        run: npm install --package-lock=false
+        run: bun install --package-lock=false
 
       - name: run svelte check
-        run: npm run check
+        run: bun run check
 
       - name: check frontend formatting
-        run: npm run fmt
+        run: bun run fmt
 
   rust-check:
     runs-on: ${{ matrix.os }}

@@ -11,8 +11,8 @@ GG is a desktop application with a keyboard & mouse interface, written in [Tauri
 To compile from source:
 
 1. Install the system dependencies (on Debian-likes, `apt install libpango1.0-dev libatk1.0-dev libgdk-pixbuf2.0-dev libgtk-3-dev libjavascriptcoregtk-4.1-dev libwebkit2gtk-4.1-dev`).
-2. Install the frontend dependencies: `npm install`.
-3. Build the application: `npm run tauri build`.
+2. Install the frontend dependencies: `bun install`.
+3. Build the application: `bun run tauri build`.
 
 ### Setup
 
@@ -57,10 +57,11 @@ Recommended IDE setup: [VS Code](https://code.visualstudio.com/) + [rust-analyze
 
 Some useful commands:
 
-- `npm run test` - execute unit tests.
-- `npm run gen` - update the IPC message types in src/messages from src-tauri/messages.rs.
-- `npm run tauri dev` - launch a debug build with automatic reloading.
-- `npm run tauri build -- --target universal-apple-darwin` - create a fat binary for MacOS.
-- `npm run tauri dev -- -- -- --debug` - run locally with --debug. Yes, all three `--` are necessary.
+- `bun run test` - execute unit tests.
+- `bun run gen` - update the IPC message types in src/messages from src-tauri/messages.rs.
+- `bun run fix` - format the code and fix clippy warnings.
+- `bun run tauri dev` - launch a debug build with automatic reloading.
+- `bun run tauri build -- --target universal-apple-darwin` - create a fat binary for MacOS.
+- `bun run tauri dev -- -- -- --debug` - run locally with --debug. Yes, all three `--` are necessary.
 
 [DESIGN.md](DESIGN.md) has some basic information about how GG works.
