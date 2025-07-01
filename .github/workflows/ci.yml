@@ -26,7 +26,7 @@ jobs:
         run: npm run check
 
       - name: check frontend formatting
-        run: npx prettier --check "**/*.{js,ts,svelte,json,css,md,yml}" "!package-lock.json" "!src-tauri/gen/**" "!src/messages/**"
+        run: npm run fmt
 
   rust-check:
     runs-on: ${{ matrix.os }}
