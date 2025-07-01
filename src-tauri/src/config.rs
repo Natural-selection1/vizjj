@@ -62,7 +62,7 @@ impl GGSettings for UserSettings {
 
 pub fn read_config(repo_path: &Path) -> Result<(UserSettings, RevsetAliasesMap)> {
     let mut default_layers = default_config_layers();
-    let gg_layer = ConfigLayer::parse(ConfigSource::Default, include_str!("../config/gg.toml"))?;
+    let gg_layer = ConfigLayer::parse(ConfigSource::Default, include_str!("./config/gg.toml"))?;
     default_layers.push(gg_layer);
     let mut raw_config = config_from_environment(default_layers);
 
