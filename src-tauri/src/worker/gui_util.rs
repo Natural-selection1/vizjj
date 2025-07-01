@@ -794,7 +794,7 @@ impl WorkspaceSession<'_> {
 
         tx.repo_mut().rebase_descendants()?;
 
-        self.finish_transaction(tx, format!("import git refs: {:?}", stats))?;
+        self.finish_transaction(tx, format!("import git refs: {stats:?}"))?;
         Ok(())
     }
 

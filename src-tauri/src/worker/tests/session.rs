@@ -4,7 +4,6 @@ use crate::{
     worker::{Session, SessionEvent, WorkerSession},
 };
 use anyhow::Result;
-use jj_lib::config::ConfigSource;
 use std::{path::PathBuf, sync::mpsc::channel};
 
 #[test]
@@ -332,6 +331,7 @@ fn query_rev_not_found() -> Result<()> {
 }
 
 #[test]
+#[cfg(windows)]
 fn config_read() -> Result<()> {
     let repo = mkrepo();
 
@@ -360,7 +360,10 @@ fn config_read() -> Result<()> {
 }
 
 #[test]
+#[cfg(windows)]
 fn config_write() -> Result<()> {
+    use jj_lib::config::ConfigSource;
+
     let repo = mkrepo();
 
     let (tx, rx) = channel::<SessionEvent>();

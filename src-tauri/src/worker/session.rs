@@ -5,7 +5,9 @@ use std::{
 };
 
 use anyhow::{Context, Result, anyhow};
+#[cfg(windows)]
 use jj_cli::{config::ConfigEnv, ui::Ui};
+#[cfg(windows)]
 use jj_lib::config::{ConfigNamePathBuf, ConfigSource};
 
 use super::{
@@ -13,10 +15,11 @@ use super::{
     gui_util::WorkspaceSession,
     queries::{self, QueryState},
 };
-use crate::{
-    config::{GGSettings, read_config},
-    handler, messages,
-};
+#[cfg(windows)]
+use crate::config::read_config;
+#[cfg(windows)]
+use crate::handler;
+use crate::{config::GGSettings, messages};
 
 /// implemented by states of the event loop
 pub trait Session {
@@ -55,10 +58,12 @@ pub enum SessionEvent {
         tx: Sender<messages::MutationResult>,
         mutation: Box<dyn Mutation + Send + Sync>,
     },
+    #[cfg(windows)]
     ReadConfigArray {
         tx: Sender<Result<Vec<String>>>,
         key: Vec<String>,
     },
+    #[cfg(windows)]
     WriteConfigArray {
         scope: ConfigSource,
         key: Vec<String>,
@@ -239,6 +244,7 @@ impl Session for WorkspaceSession<'_> {
                         }
                     }
                 }
+                #[cfg(windows)]
                 SessionEvent::ReadConfigArray { key, tx } => {
                     let name: ConfigNamePathBuf = key.iter().collect();
 
@@ -260,6 +266,7 @@ impl Session for WorkspaceSession<'_> {
                             .context("read config"),
                     )?;
                 }
+                #[cfg(windows)]
                 SessionEvent::WriteConfigArray { scope, key, values } => {
                     let name: ConfigNamePathBuf = key.iter().collect();
                     let config_env = ConfigEnv::from_environment(&Ui::null());
