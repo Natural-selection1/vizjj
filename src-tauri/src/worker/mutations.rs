@@ -236,7 +236,7 @@ impl Mutation for DuplicateRevisions {
             clones.insert(clonee, clone);
         }
 
-        match ws.finish_transaction(tx, format!("duplicating {} commit(s)", num_clonees))? {
+        match ws.finish_transaction(tx, format!("duplicating {num_clonees} commit(s)"))? {
             Some(new_status) => {
                 if num_clonees == 1 {
                     let new_commit = clones
@@ -289,7 +289,7 @@ impl Mutation for InsertRevision {
         let target = rewrite::rebase_commit(tx.repo_mut(), target, vec![after_id])?;
         rewrite::rebase_commit(tx.repo_mut(), before, vec![target.id().clone()])?;
 
-        match ws.finish_transaction(tx, format!("rebase commit {}", rebased_id))? {
+        match ws.finish_transaction(tx, format!("rebase commit {rebased_id}"))? {
             Some(new_status) => Ok(MutationResult::Updated { new_status }),
             None => Ok(MutationResult::Unchanged),
         }
@@ -325,7 +325,7 @@ impl Mutation for MoveRevision {
         let rebased_id = target.id().hex();
         rewrite::rebase_commit(tx.repo_mut(), target, parent_ids)?;
 
-        match ws.finish_transaction(tx, format!("rebase commit {}", rebased_id))? {
+        match ws.finish_transaction(tx, format!("rebase commit {rebased_id}"))? {
             Some(new_status) => Ok(MutationResult::Updated { new_status }),
             None => Ok(MutationResult::Unchanged),
         }
@@ -351,7 +351,7 @@ impl Mutation for MoveSource {
         let rebased_id = target.id().hex();
         rewrite::rebase_commit(tx.repo_mut(), target, parent_ids)?;
 
-        match ws.finish_transaction(tx, format!("rebase commit {}", rebased_id))? {
+        match ws.finish_transaction(tx, format!("rebase commit {rebased_id}"))? {
             Some(new_status) => Ok(MutationResult::Updated { new_status }),
             None => Ok(MutationResult::Unchanged),
         }
@@ -856,7 +856,7 @@ impl Mutation for GitPush {
                     .view()
                     .all_remote_bookmarks()
                     .filter_map(|(remote_ref_symbol, remote_ref)| {
-                        if remote_ref.is_tracked() && remote_ref_symbol.name == &branch_name_ref {
+                        if remote_ref.is_tracked() && remote_ref_symbol.name == branch_name_ref {
                             Some((remote_ref_symbol.remote, remote_ref))
                         } else {
                             None
@@ -996,7 +996,7 @@ impl Mutation for GitPush {
             tx,
             match *self {
                 GitPush::AllBookmarks { remote_name } => {
-                    format!("push all tracked branches to git remote {}", remote_name)
+                    format!("push all tracked branches to git remote {remote_name}")
                 }
                 GitPush::AllRemotes { branch_ref } => {
                     format!(
@@ -1133,12 +1133,12 @@ fn combine_messages(source: &Commit, destination: &Commit, abandon_source: bool)
 
 fn combine_bookmarks(branch_names: &[impl Display]) -> String {
     match branch_names {
-        [branch_name] => format!("bookmark {}", branch_name),
+        [branch_name] => format!("bookmark {branch_name}"),
         branch_names => format!("bookmarks {}", branch_names.iter().join(", ")),
     }
 }
 
-fn build_matcher(paths: &Vec<TreePath>) -> Result<Box<dyn Matcher>> {
+fn build_matcher(paths: &[TreePath]) -> Result<Box<dyn Matcher>> {
     if paths.is_empty() {
         Ok(Box::new(EverythingMatcher))
     } else {
@@ -1160,15 +1160,13 @@ fn classify_branch_push(
         BookmarkPushAction::AlreadyMatches => Ok(None),
         BookmarkPushAction::Update(update) => Ok(Some(update)),
         BookmarkPushAction::LocalConflicted => {
-            Err(format!("Bookmark {} is conflicted.", branch_name))
+            Err(format!("Bookmark {branch_name} is conflicted."))
         }
         BookmarkPushAction::RemoteConflicted => Err(format!(
-            "Bookmark {}@{} is conflicted. Try fetching first.",
-            branch_name, remote_name
+            "Bookmark {branch_name}@{remote_name} is conflicted. Try fetching first."
         )),
         BookmarkPushAction::RemoteUntracked => Err(format!(
-            "Non-tracking remote bookmark {}@{} exists. Try tracking it first.",
-            branch_name, remote_name
+            "Non-tracking remote bookmark {branch_name}@{remote_name} exists. Try tracking it first."
         )),
     }
 }
