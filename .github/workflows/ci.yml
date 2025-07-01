@@ -24,6 +24,44 @@ jobs:
     runs-on: "ubuntu-22.04"
     env:
       RUST_BACKTRACE: "1"
+        run: npm install --package-lock=false
+
+      - name: run svelte check
+        run: npm run check
+
+      - name: check frontend formatting
+        run: npx prettier --check "**/*.{js,ts,svelte,json,css,md,yml}" "!package-lock.json" "!src-tauri/gen/**" "!src/messages/**"
+
+  rust-check:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: macos-latest
+            target: x86_64-apple-darwin
+        run: npm install --package-lock=false
+
+      - name: run svelte check
+        run: npm run check
+
+      - name: check frontend formatting
+        run: npm run fmt
+
+  rust-check:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: macos-latest
+            target: x86_64-apple-darwin
     steps:
       - uses: actions/checkout@v4
 
