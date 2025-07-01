@@ -16,10 +16,6 @@ To compile from source:
 
 ### Setup
 
-### Setup
-
-### Setup
-
 Put `gg` on your path and run it from a Jujutsu workspace, pass the workspace directory as an argument or launch it separately and use the Repository->Open menu item. Tips:
 
 - On MacOS, try adding `/Applications/gg.app/Contents/MacOS/` to your PATH environment variable. On Windows, add `C:\Program Files\gg\`.
@@ -60,10 +56,6 @@ If your repo is "too large" some features will be disabled for performance. See 
 
 ## Development
 
-## Development
-
-## Development
-
 Recommended IDE setup: [VS Code](https://code.visualstudio.com/) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode).
 
 Some useful commands:
@@ -73,16 +65,5 @@ Some useful commands:
 - `bun run tauri dev` - launch a debug build with automatic reloading.
 - `bun run tauri build -- --target universal-apple-darwin` - create a fat binary for MacOS.
 - `bun run tauri dev -- -- -- --debug` - run locally with --debug. Yes, all three `--` are necessary.
-- `npm run test` - execute unit tests.
-- `npm run gen` - update the IPC message types in src/messages from src-tauri/messages.rs.
-- `npm run tauri dev` - launch a debug build with automatic reloading.
-- `npm run tauri build -- --target universal-apple-darwin` - create a fat binary for MacOS.
-- `npm run tauri dev -- -- -- --debug` - run locally with --debug. Yes, all three `--` are necessary.
-
-* `npm run test` - execute unit tests.
-* `npm run gen` - update the IPC message types in src/messages from src-tauri/messages.rs.
-* `npm run tauri dev` - launch a debug build with automatic reloading.
-* `npm run tauri build -- --target universal-apple-darwin` - create a fat binary for MacOS.
-* `npm run tauri dev -- -- -- --debug` - run locally with --debug. Yes, all three `--` are necessary.
 
 [DESIGN.md](DESIGN.md) has some basic information about how GG works.

@@ -11,7 +11,7 @@
     "tauri": "tauri",
     "gen": "cd src-tauri && cargo test -F ts-rs",
     "test": "cd src-tauri && cargo test",
-    "fmt": "npx prettier --write \"**/*.{js,ts,svelte,json,css,md,yml}\" \"!package-lock.json\" \"!src-tauri/gen\" \"!src/messages\" && cd src-tauri && cargo fmt && cargo clippy --fix --all-targets --allow-dirty"
+    "fmt": "npx prettier --write \"**/*.{js,ts,svelte,json,css,md,yml}\" \"!package-lock.json\" \"!src-tauri/gen\" \"!src/messages\" && cd src-tauri && cargo fmt && cargo clippy --fix --all-targets --allow-dirty --allow-no-vcs"
   },
   "dependencies": {
     "@catppuccin/palette": "^1.0.3",
