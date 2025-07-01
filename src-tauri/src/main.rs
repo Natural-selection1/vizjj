@@ -563,7 +563,7 @@ fn try_open_repository(window: &Window, cwd: Option<PathBuf>) -> Result<()> {
                 "gg://repo/config",
                 messages::RepoConfig::LoadError {
                     absolute_path: cwd.unwrap_or_default().into(),
-                    message: format!("{:#?}", err),
+                    message: format!("{err:#?}"),
                 },
             )?;
         }
