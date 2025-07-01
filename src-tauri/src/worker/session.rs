@@ -5,9 +5,7 @@ use std::{
 };
 
 use anyhow::{Context, Result, anyhow};
-#[cfg(windows)]
 use jj_cli::{config::ConfigEnv, ui::Ui};
-#[cfg(windows)]
 use jj_lib::config::{ConfigNamePathBuf, ConfigSource};
 
 use super::{
@@ -15,9 +13,7 @@ use super::{
     gui_util::WorkspaceSession,
     queries::{self, QueryState},
 };
-#[cfg(windows)]
 use crate::config::read_config;
-#[cfg(windows)]
 use crate::handler;
 use crate::{config::GGSettings, messages};
 
@@ -58,12 +54,10 @@ pub enum SessionEvent {
         tx: Sender<messages::MutationResult>,
         mutation: Box<dyn Mutation + Send + Sync>,
     },
-    #[cfg(windows)]
     ReadConfigArray {
         tx: Sender<Result<Vec<String>>>,
         key: Vec<String>,
     },
-    #[cfg(windows)]
     WriteConfigArray {
         scope: ConfigSource,
         key: Vec<String>,
@@ -99,6 +93,29 @@ impl Session for WorkerSession {
             match evt {
                 Ok(SessionEvent::EndSession) => return Ok(()),
                 Ok(SessionEvent::ExecuteSnapshot { .. }) => (),
+                Ok(SessionEvent::ReadConfigArray { key, tx }) => {
+                    let name: ConfigNamePathBuf = key.iter().collect();
+                    if let Some(global_settings) = self.global_settings.as_ref() {
+                        tx.send(
+                            global_settings
+                                .config()
+                                .get_value_with(&name, |value| {
+                                    value
+                                        .as_array()
+                                        .map(|values| {
+                                            values
+                                                .into_iter()
+                                                .flat_map(|v| v.as_str().map(|s| s.to_string()))
+                                                .collect::<Vec<String>>()
+                                        })
+                                        .ok_or(anyhow!("config value is not an array"))
+                                })
+                                .context("read config"),
+                        )?;
+                    } else {
+                        tx.send(Err(anyhow!("global settings not found")))?;
+                    }
+                }
                 Ok(SessionEvent::OpenWorkspace { mut tx, mut wd }) => loop {
                     let resolved_wd = match wd.clone().or(latest_wd) {
                         Some(wd) => wd,
@@ -244,7 +261,6 @@ impl Session for WorkspaceSession<'_> {
                         }
                     }
                 }
-                #[cfg(windows)]
                 SessionEvent::ReadConfigArray { key, tx } => {
                     let name: ConfigNamePathBuf = key.iter().collect();
 
@@ -266,7 +282,6 @@ impl Session for WorkspaceSession<'_> {
                             .context("read config"),
                     )?;
                 }
-                #[cfg(windows)]
                 SessionEvent::WriteConfigArray { scope, key, values } => {
                     let name: ConfigNamePathBuf = key.iter().collect();
                     let config_env = ConfigEnv::from_environment(&Ui::null());
