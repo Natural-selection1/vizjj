@@ -8,7 +8,6 @@ devUrl = "http://localhost:6973"
 beforeBuildCommand = "bun run build"
 frontendDist = "../dist"
 
-
 [app]
 [[app.windows]]
 label = "main"
@@ -34,9 +33,5 @@ icon = [
     "icons/icon.icns",
     "icons/icon.ico",
 ]
-
-[bundle.windows]
-signCommand = "trusted-signing-cli -e https://wus2.codesigning.azure.net/ -a agile-signing -c cloud-apps %1"
-
 
 [plugins]
