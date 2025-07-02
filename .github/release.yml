@@ -1,0 +1,36 @@
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+      - duplicate
+      - invalid
+    authors:
+      - dependabot[bot]
+  categories:
+    - title: ✨ new features
+      labels:
+        - feature
+    - title: 🐛 bug fixes
+      labels:
+        - fix
+    - title: 🔧 refactor and optimization
+      labels:
+        - refactor
+        - optimization
+    - title: 🎨 UI/UX improvements
+      labels:
+        - ui/ux
+    - title: 📦 dependency management
+      labels:
+        - deps
+        - build
+    - title: 🔄 CI/CD updates
+      labels:
+        - ci/cd
+    - title: 📝 configuration and documentation
+      labels:
+        - config
+        - docs
+    - title: 🔀 other changes
+      labels:
+        - "*"
