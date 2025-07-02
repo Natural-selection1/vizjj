@@ -1,15 +1,15 @@
-[gg.queries]
+[vizjj.queries]
 # Number of commits to load per call
 log-page-size = 1000
 
 # Some query settings will default to false instead of true if a repo has this many commits.
 large-repo-heuristic = 100000
 
-# Take a snapshot when the window gains focus; slow in large checkouts. 
-# When disabled, snapshots will still be created if you run commands. 
-# auto-snapshot = 
+# Take a snapshot when the window gains focus; slow in large checkouts.
+# When disabled, snapshots will still be created if you run commands.
+# auto-snapshot =
 
-[gg.ui]
+[vizjj.ui]
 # Stores a list of recently opened directories for shell integration
 recent-workspaces = []
 

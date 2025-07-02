@@ -46,7 +46,7 @@
     document.body.addEventListener("click", () => currentContext.set(null), true);
 
     // this is a special case - most triggers are fire-and-forget, but we really need a
-    // gg://repo/config event in response to this one. if it takes too long, we make our own
+    // vizjj://repo/config event in response to this one. if it takes too long, we make our own
     trigger("notify_window_ready");
     let loadTimeout: number | null;
     onMount(() => {
@@ -62,10 +62,10 @@
     };
     setContext<Settings>("settings", settings);
 
-    onEvent("gg://context/revision", mutateRevision);
-    onEvent("gg://context/tree", mutateTree);
-    onEvent("gg://context/branch", mutateRef);
-    onEvent("gg://input", requestInput);
+    onEvent("vizjj://context/revision", mutateRevision);
+    onEvent("vizjj://context/tree", mutateTree);
+    onEvent("vizjj://context/branch", mutateRef);
+    onEvent("vizjj://input", requestInput);
 
     $: if ($repoConfigEvent) loadRepo($repoConfigEvent);
     $: if ($repoStatusEvent && $revisionSelectEvent) loadChange($revisionSelectEvent.id);
@@ -196,7 +196,7 @@
             <ModalOverlay>
                 <ErrorDialog title="No Workspace Loaded" severe>
                     <p>Error communicating with backend: the operation is taking too long.</p>
-                    <p>You may need to restart GG to continue.</p>
+                    <p>You may need to restart vizjj to continue.</p>
                     <RecentWorkspaces workspaces={recentWorkspaces} />
                 </ErrorDialog>
             </ModalOverlay>
@@ -204,7 +204,7 @@
             <ModalOverlay>
                 <ErrorDialog title="Fatal Error" severe>
                     <p>Error communicating with backend: {$repoConfigEvent.message}.</p>
-                    <p>You may need to restart GG to continue.</p>
+                    <p>You may need to restart vizjj to continue.</p>
                     <RecentWorkspaces workspaces={recentWorkspaces} />
                 </ErrorDialog>
             </ModalOverlay>

@@ -1,12 +1,12 @@
 ## Design Principles
 
-The primary metaphor is _direct manipulation_. GG aims to present a view of the repository's
+The primary metaphor is _direct manipulation_. vizjj aims to present a view of the repository's
 conceptual contents - revisions, changes to files, synced refs and maybe more - which can be
 modified, using right-click and drag-drop, to 'edit' the repo as a whole.
 
 Jujutsu CLI commands sometimes have a lot of options (`rebase`) or are partially redundant
 for convenience (`move`, `squash`). This is good for scripting, but some use cases demand
-interactivity - reordering multiple commits, for example. Hopefully, `gg` can complement `jj`
+interactivity - reordering multiple commits, for example. Hopefully, `vizjj` can complement `jj`
 by providing decomposed means to achieve some of the same tasks, with immediate visual feedback.
 
 The UI uses a couple of key conventions for discoverability:
@@ -42,14 +42,14 @@ Drag & drop capabilities are implemented by `objects/Object.svelte`, a draggable
 
 ## Branch Objects
 
-The representation of branches, in JJ and GG, is a bit complicated; there are multiple state axes.
+The representation of branches, in JJ and vizjj, is a bit complicated; there are multiple state axes.
 A repository can have zero or more **remotes**.
 A **local branch** can track zero or more of the remotes. (Technically, remote _branches_.)
 A **remote branch** can be any of _tracked_ (a flag on the ref), _synced_ (if it points to the same
 commit as a local branch of the same name), and _absent_ (if there's a local branch with _no_ ref,
 in which case it will be deleted by the CLI on push.
 
-GG attempts to simplify the display of branches by combining refs in the UI. Taking advantage of
+vizjj attempts to simplify the display of branches by combining refs in the UI. Taking advantage of
 Jujutsu's model, which guarantees that a branch name identifies the same branch across remotes, a
 local branch and the tracked remote branches with which it is currently synced are be combined into
 a single UI object. Remote branches are displayed separately if they're unsynced, untracked or absent.

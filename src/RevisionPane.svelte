@@ -78,7 +78,7 @@
         editRow(row: number) {},
     };
 
-    onEvent<string>("gg://menu/revision", (event) => mutator.handle(event));
+    onEvent<string>("vizjj://menu/revision", (event) => mutator.handle(event));
 
     function minLines(change: RevChange): number {
         // let total = 0;
