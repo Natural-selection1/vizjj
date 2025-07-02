@@ -1,34 +1,34 @@
 <script lang="ts">
+    import { onMount, setContext } from "svelte";
+    import LogPane from "./LogPane.svelte";
+    import RevisionPane from "./RevisionPane.svelte";
+    import BoundQuery from "./controls/BoundQuery.svelte";
+    import IdSpan from "./controls/IdSpan.svelte";
+    import { onEvent, type Query, query, trigger } from "./ipc.js";
+    import type { InputRequest } from "./messages/InputRequest";
+    import type { InputResponse } from "./messages/InputResponse";
+    import type { RepoConfig } from "./messages/RepoConfig";
     import type { RevId } from "./messages/RevId";
     import type { RevResult } from "./messages/RevResult";
-    import type { RepoConfig } from "./messages/RepoConfig";
-    import { type Query, query, trigger, onEvent } from "./ipc.js";
+    import ChangeMutator from "./mutators/ChangeMutator";
+    import RefMutator from "./mutators/RefMutator";
+    import RevisionMutator from "./mutators/RevisionMutator";
+    import Zone from "./objects/Zone.svelte";
+    import ErrorDialog from "./shell/ErrorDialog.svelte";
+    import InputDialog from "./shell/InputDialog.svelte";
+    import ModalOverlay from "./shell/ModalOverlay.svelte";
+    import Pane from "./shell/Pane.svelte";
+    import RecentWorkspaces from "./shell/RecentWorkspaces.svelte";
+    import type Settings from "./shell/Settings";
+    import StatusBar from "./shell/StatusBar.svelte";
     import {
-        currentMutation,
         currentContext,
+        currentInput,
+        currentMutation,
         repoConfigEvent,
         repoStatusEvent,
         revisionSelectEvent,
-        currentInput,
     } from "./stores.js";
-    import RefMutator from "./mutators/RefMutator";
-    import ChangeMutator from "./mutators/ChangeMutator";
-    import RevisionMutator from "./mutators/RevisionMutator";
-    import Pane from "./shell/Pane.svelte";
-    import RevisionPane from "./RevisionPane.svelte";
-    import LogPane from "./LogPane.svelte";
-    import BoundQuery from "./controls/BoundQuery.svelte";
-    import Zone from "./objects/Zone.svelte";
-    import StatusBar from "./shell/StatusBar.svelte";
-    import ModalOverlay from "./shell/ModalOverlay.svelte";
-    import ErrorDialog from "./shell/ErrorDialog.svelte";
-    import RecentWorkspaces from "./shell/RecentWorkspaces.svelte";
-    import { onMount, setContext } from "svelte";
-    import IdSpan from "./controls/IdSpan.svelte";
-    import InputDialog from "./shell/InputDialog.svelte";
-    import type { InputRequest } from "./messages/InputRequest";
-    import type { InputResponse } from "./messages/InputResponse";
-    import type Settings from "./shell/Settings";
 
     let selection: Query<RevResult> = {
         type: "wait",
