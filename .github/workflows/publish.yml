@@ -40,14 +40,13 @@ jobs:
       - name: install frontend dependencies
         run: bun install --package-lock=false
 
-      - uses: tauri-apps/tauri-action@v0
+      - uses: tauri-apps/tauri-action@v0.5.22
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
         with:
           args: ${{ matrix.platform == 'macos-latest' && '--target universal-apple-darwin' || ''}}
           tagName: v__VERSION__
-          releaseName: "GG __VERSION__"
-          releaseBody: "See the assets to download this version and install."
+          releaseName: "__VERSION__"
           releaseDraft: true
           prerelease: true

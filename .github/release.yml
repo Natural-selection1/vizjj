@@ -13,13 +13,17 @@ changelog:
     - title: 🐛 bug fixes
       labels:
         - fix
+    - title: 🎨 UI/UX improvements
+      labels:
+        - ui/ux
+    - title: 📝 configuration and documentation
+      labels:
+        - config
+        - docs
     - title: 🔧 refactor and optimization
       labels:
         - refactor
         - optimization
-    - title: 🎨 UI/UX improvements
-      labels:
-        - ui/ux
     - title: 📦 dependency management
       labels:
         - deps
@@ -27,10 +31,6 @@ changelog:
     - title: 🔄 CI/CD updates
       labels:
         - ci/cd
-    - title: 📝 configuration and documentation
-      labels:
-        - config
-        - docs
     - title: 🔀 other changes
       labels:
         - "*"
