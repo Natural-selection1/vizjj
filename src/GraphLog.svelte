@@ -11,9 +11,9 @@
 </script>
 
 <script lang="ts">
-    import type { LogRow } from "./messages/LogRow.js";
     import GraphLine from "./GraphLine.svelte";
     import GraphNode from "./GraphNode.svelte";
+    import type { LogRow } from "./messages/LogRow.js";
     import type { RevHeader } from "./messages/RevHeader.js";
 
     interface $$Slots {

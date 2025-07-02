@@ -1,10 +1,10 @@
 <script lang="ts">
     import { createEventDispatcher, onMount } from "svelte";
-    import type { InputResponse } from "../messages/InputResponse";
-    import type { InputField } from "../messages/InputField";
     import ActionWidget from "../controls/ActionWidget.svelte";
-    import ModalDialog from "./ModalDialog.svelte";
     import SelectWidget from "../controls/SelectWidget.svelte";
+    import type { InputField } from "../messages/InputField";
+    import type { InputResponse } from "../messages/InputResponse";
+    import ModalDialog from "./ModalDialog.svelte";
 
     interface $$Events {
         response: CustomEvent<InputResponse>;

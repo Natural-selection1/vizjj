@@ -1,15 +1,15 @@
 <script lang="ts">
     import { onMount } from "svelte";
+    import { default as GraphLog, type EnhancedLine, type EnhancedRow } from "./GraphLog.svelte";
+    import ListWidget, { type List } from "./controls/ListWidget.svelte";
+    import SelectWidget from "./controls/SelectWidget.svelte";
+    import { query } from "./ipc.js";
     import type { LogPage } from "./messages/LogPage.js";
     import type { LogRow } from "./messages/LogRow.js";
-    import { query } from "./ipc.js";
-    import { repoStatusEvent, revisionSelectEvent } from "./stores.js";
-    import Pane from "./shell/Pane.svelte";
-    import RevisionObject from "./objects/RevisionObject.svelte";
-    import SelectWidget from "./controls/SelectWidget.svelte";
     import RevisionMutator from "./mutators/RevisionMutator.js";
-    import { type EnhancedRow, default as GraphLog, type EnhancedLine } from "./GraphLog.svelte";
-    import ListWidget, { type List } from "./controls/ListWidget.svelte";
+    import RevisionObject from "./objects/RevisionObject.svelte";
+    import Pane from "./shell/Pane.svelte";
+    import { repoStatusEvent, revisionSelectEvent } from "./stores.js";
 
     export let default_query: string;
     export let latest_query: string;

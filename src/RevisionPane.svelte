@@ -1,21 +1,21 @@
 <script lang="ts">
-    import type { RevResult } from "./messages/RevResult";
-    import { changeSelectEvent, dragOverWidget } from "./stores";
-    import ChangeObject from "./objects/ChangeObject.svelte";
-    import RevisionObject from "./objects/RevisionObject.svelte";
-    import RevisionMutator from "./mutators/RevisionMutator";
     import ActionWidget from "./controls/ActionWidget.svelte";
+    import AuthorSpan from "./controls/AuthorSpan.svelte";
+    import CheckWidget from "./controls/CheckWidget.svelte";
     import Icon from "./controls/Icon.svelte";
     import IdSpan from "./controls/IdSpan.svelte";
-    import Pane from "./shell/Pane.svelte";
-    import CheckWidget from "./controls/CheckWidget.svelte";
-    import Zone from "./objects/Zone.svelte";
-    import { onEvent } from "./ipc";
-    import AuthorSpan from "./controls/AuthorSpan.svelte";
     import ListWidget, { type List } from "./controls/ListWidget.svelte";
-    import type { RevChange } from "./messages/RevChange";
+    import { onEvent } from "./ipc";
     import type { ChangeId } from "./messages/ChangeId";
     import type { CommitId } from "./messages/CommitId";
+    import type { RevChange } from "./messages/RevChange";
+    import type { RevResult } from "./messages/RevResult";
+    import RevisionMutator from "./mutators/RevisionMutator";
+    import ChangeObject from "./objects/ChangeObject.svelte";
+    import RevisionObject from "./objects/RevisionObject.svelte";
+    import Zone from "./objects/Zone.svelte";
+    import Pane from "./shell/Pane.svelte";
+    import { changeSelectEvent, dragOverWidget } from "./stores";
 
     export let rev: Extract<RevResult, { type: "Detail" }>;
 

@@ -1,11 +1,12 @@
 <script lang="ts">
     import ActionWidget from "../controls/ActionWidget.svelte";
+    import BranchSpan from "../controls/BranchSpan.svelte";
     import Icon from "../controls/Icon.svelte";
     import IdSpan from "../controls/IdSpan.svelte";
     import { mutate } from "../ipc";
-    import type { Operand } from "../messages/Operand";
     import type { GitFetch } from "../messages/GitFetch";
     import type { GitPush } from "../messages/GitPush";
+    import type { Operand } from "../messages/Operand";
     import type { UndoOperation } from "../messages/UndoOperation";
     import type { RichHint } from "../mutators/BinaryMutator";
     import BinaryMutator from "../mutators/BinaryMutator";
@@ -16,7 +17,6 @@
         repoConfigEvent,
         repoStatusEvent,
     } from "../stores";
-    import BranchSpan from "../controls/BranchSpan.svelte";
 
     export let target: boolean;
 
