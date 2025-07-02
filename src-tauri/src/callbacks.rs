@@ -72,7 +72,7 @@ impl FrontendCallbacks {
 
         // send the request
         match self.0.emit(
-            "gg://input",
+            "vizjj://input",
             InputRequest {
                 title: String::from("Git Login"),
                 detail,

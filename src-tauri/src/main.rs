@@ -115,7 +115,7 @@ fn main() -> Result<()> {
             tauri_plugin_log::Builder::default()
                 .level(LevelFilter::Warn)
                 .level_for(
-                    "gg",
+                    "vizjj",
                     if args.debug {
                         LevelFilter::Debug
                     } else {
@@ -184,7 +184,7 @@ fn main() -> Result<()> {
 
                     // it's ok if the worker has to restart, as long as we can notify the frontend of it
                     handler::fatal!(handle.emit(
-                        "gg://repo/config",
+                        "vizjj://repo/config",
                         messages::RepoConfig::WorkerError {
                             message: format!("{err:#}"),
                         },
@@ -198,7 +198,7 @@ fn main() -> Result<()> {
             window.on_window_event(move |event| handle_window_event(&handle, event));
 
             handle = window.as_ref().window();
-            window.listen("gg://revision/select", move |event| {
+            window.listen("vizjj://revision/select", move |event| {
                 let payload: Result<Option<messages::RevHeader>, serde_json::Error> =
                     serde_json::from_str(event.payload());
                 if let Some(menu) = handle.menu() {
@@ -539,7 +539,7 @@ fn try_open_repository(window: &Window, cwd: Option<PathBuf>) -> Result<()> {
             match &config {
                 messages::RepoConfig::Workspace { absolute_path, .. } => {
                     let repo_path = absolute_path.0.clone();
-                    window.set_title((String::from("GG - ") + repo_path.as_str()).as_str())?;
+                    window.set_title((String::from("vizjj - ") + repo_path.as_str()).as_str())?;
                     {
                         let window = window.clone();
                         thread::spawn(move || {
@@ -548,16 +548,16 @@ fn try_open_repository(window: &Window, cwd: Option<PathBuf>) -> Result<()> {
                     }
                 }
                 _ => {
-                    window.set_title("GG - Gui for JJ")?;
+                    window.set_title("vizjj - Gui for JJ")?;
                 }
             }
-            window.emit("gg://repo/config", config)?;
+            window.emit("vizjj://repo/config", config)?;
         }
         Err(err) => {
             log::warn!("load workspace failed: {err}");
-            window.set_title("GG - Gui for JJ")?;
+            window.set_title("vizjj - Gui for JJ")?;
             window.emit(
-                "gg://repo/config",
+                "vizjj://repo/config",
                 messages::RepoConfig::LoadError {
                     absolute_path: cwd.unwrap_or_default().into(),
                     message: format!("{err:#?}"),
@@ -602,7 +602,7 @@ fn handle_window_event(window: &Window, event: &WindowEvent) {
         let window = window.clone();
         thread::spawn(move || {
             if let Some(status) = handler::nonfatal!(call_rx.recv()) {
-                handler::nonfatal!(window.emit("gg://repo/status", status));
+                handler::nonfatal!(window.emit("vizjj://repo/status", status));
             }
         });
     }
@@ -615,7 +615,7 @@ fn add_recent_workspaces(window: Window, repo_path: &str) -> Result<()> {
     let (read_tx, read_rx) = channel();
     session_tx.send(SessionEvent::ReadConfigArray {
         key: vec![
-            "gg".to_string(),
+            "vizjj".to_string(),
             "ui".to_string(),
             "recent-workspaces".to_string(),
         ],
@@ -634,7 +634,7 @@ fn add_recent_workspaces(window: Window, repo_path: &str) -> Result<()> {
 
     session_tx.send(SessionEvent::WriteConfigArray {
         key: vec![
-            "gg".to_string(),
+            "vizjj".to_string(),
             "ui".to_string(),
             "recent-workspaces".to_string(),
         ],
@@ -655,7 +655,7 @@ fn query_recent_workspaces(
     session_tx
         .send(SessionEvent::ReadConfigArray {
             key: vec![
-                "gg".to_string(),
+                "vizjj".to_string(),
                 "ui".to_string(),
                 "recent-workspaces".to_string(),
             ],

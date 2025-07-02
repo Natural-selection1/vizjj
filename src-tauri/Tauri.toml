@@ -1,6 +1,6 @@
-productName = "gg"
+productName = "vizjj"
 version = "0.29.0"
-identifier = "au.gulbanana.gg"
+identifier = "au.natural-selection.vizjj"
 
 [build]
 beforeDevCommand = "bun run dev"
@@ -11,7 +11,7 @@ frontendDist = "../dist"
 [app]
 [[app.windows]]
 label = "main"
-title = "GG - Gui for JJ"
+title = "vizjj - Gui for JJ"
 decorations = true
 resizable = true
 focus = true

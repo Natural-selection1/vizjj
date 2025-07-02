@@ -23,31 +23,31 @@ pub trait GGSettings {
 
 impl GGSettings for UserSettings {
     fn query_log_page_size(&self) -> usize {
-        self.get_int("gg.queries.log-page-size").unwrap_or(1000) as usize
+        self.get_int("vizjj.queries.log-page-size").unwrap_or(1000) as usize
     }
 
     fn query_large_repo_heuristic(&self) -> i64 {
-        self.get_int("gg.queries.large-repo-heuristic")
+        self.get_int("vizjj.queries.large-repo-heuristic")
             .unwrap_or(100000)
     }
 
     fn query_auto_snapshot(&self) -> Option<bool> {
-        self.get_bool("gg.queries.auto-snapshot").ok()
+        self.get_bool("vizjj.queries.auto-snapshot").ok()
     }
 
     fn ui_theme_override(&self) -> Option<String> {
-        self.get_string("gg.ui.theme-override").ok()
+        self.get_string("vizjj.ui.theme-override").ok()
     }
 
     fn ui_mark_unpushed_bookmarks(&self) -> bool {
-        self.get_bool("gg.ui.mark-unpushed-bookmarks").unwrap_or(
-            self.get_bool("gg.ui.mark-unpushed-branches")
+        self.get_bool("vizjj.ui.mark-unpushed-bookmarks").unwrap_or(
+            self.get_bool("vizjj.ui.mark-unpushed-branches")
                 .unwrap_or(true),
         )
     }
 
     fn ui_recent_workspaces(&self) -> Vec<String> {
-        self.get_value("gg.ui.recent-workspaces")
+        self.get_value("vizjj.ui.recent-workspaces")
             .ok()
             .and_then(|v| v.as_array().cloned())
             .map(|values| {
@@ -66,7 +66,7 @@ pub fn read_config(repo_path: Option<&Path>) -> Result<(UserSettings, RevsetAlia
 
     let jj_default_layers = default_config_layers();
     let gg_default_layer =
-        ConfigLayer::parse(ConfigSource::Default, include_str!("./config/gg.toml"))?;
+        ConfigLayer::parse(ConfigSource::Default, include_str!("./config/vizjj.toml"))?;
     layers.extend(jj_default_layers);
     layers.push(gg_default_layer);
 

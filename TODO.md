@@ -30,5 +30,5 @@ With some dynamic way to show extra panes, replace content, open new windows &c,
 
 - View the repo at past ops.
 - View a revision at past evolutions (possibly this could be folded into the log).
-- Config UI, both for core stuff and gg's own settings.
+- Config UI, both for core stuff and vizjj's own settings.
 - Revision pinning for split/comparison workflows.

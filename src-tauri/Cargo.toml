@@ -1,7 +1,7 @@
 [package]
-name = "gg"
+name = "vizjj"
 version = "0.29.0"
-description = "GG - Gui for JJ"
+description = "vizjj - Gui for JJ"
 authors = ["Thomas Castiglione"]
 edition = "2024"
 

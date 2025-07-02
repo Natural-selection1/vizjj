@@ -345,7 +345,7 @@ fn config_read() -> Result<()> {
     })?;
     tx.send(SessionEvent::ReadConfigArray {
         tx: tx_read,
-        key: vec!["gg".into(), "ui".into(), "recent-workspaces".into()],
+        key: vec!["vizjj".into(), "ui".into(), "recent-workspaces".into()],
     })?;
     tx.send(SessionEvent::EndSession)?;
 
@@ -376,12 +376,12 @@ fn config_write() -> Result<()> {
     })?;
     tx.send(SessionEvent::WriteConfigArray {
         scope: ConfigSource::Repo,
-        key: vec!["gg".into(), "test".into()],
+        key: vec!["vizjj".into(), "test".into()],
         values: vec!["a".into(), "b".into()],
     })?;
     tx.send(SessionEvent::ReadConfigArray {
         tx: tx_read,
-        key: vec!["gg".into(), "test".into()],
+        key: vec!["vizjj".into(), "test".into()],
     })?;
     tx.send(SessionEvent::EndSession)?;
 
