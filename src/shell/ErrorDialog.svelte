@@ -6,9 +6,15 @@
     export let title: string;
     export let severe: boolean = false;
     export let onClose: (() => void) | null = null;
+
+    function handleCancel() {
+        if (onClose) {
+            onClose();
+        }
+    }
 </script>
 
-<ModalDialog {title} error={severe} on:cancel={onClose}>
+<ModalDialog {title} error={severe} on:cancel={handleCancel}>
     <slot />
 
     <svelte:fragment slot="commands">
