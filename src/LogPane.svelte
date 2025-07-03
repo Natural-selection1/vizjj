@@ -172,7 +172,7 @@
         <SelectWidget options={choices} bind:value={entered_query} on:change={reloadLog}>
             <svelte:fragment let:option>{option.label}</svelte:fragment>
         </SelectWidget>
-        <input type="text" bind:value={entered_query} on:change={reloadLog} />
+        <input class="input" type="text" bind:value={entered_query} on:change={reloadLog} />
     </div>
 
     <ListWidget

@@ -18,7 +18,7 @@
 </script>
 
 <div class="wrapper">
-    <select {id} bind:value on:change={(event) => dispatch("change", event)}>
+    <select class="select" {id} bind:value on:change={(event) => dispatch("change", event)}>
         {#each options as option}
             <option selected={value == option.value} value={option.value}>
                 <slot {option}>{option.value}</slot>
