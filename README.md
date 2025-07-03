@@ -44,8 +44,6 @@ vizjj doesn't require [JJ](https://martinvonz.github.io/jj/latest/install-and-se
 - Push and fetch git changes using the bottom bar.
 - Undo anything with ⟲ in the bottom right corner.
 
-More detail is available in [the changelog](CHANGELOG.md).
-
 ### Future Features
 
 There's no roadmap as such, but items on [the to-do list](TODO.md) may or may not be implemented in future.
