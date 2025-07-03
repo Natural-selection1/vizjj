@@ -33,11 +33,11 @@
         let midY = c2 > c1 ? childY + 9 : parentY - 9;
         let radius = c2 > c1 ? 6 : -6;
         let sweep = c2 > c1 ? 0 : 1;
-        path = `M${childX},${childY} 
-            L${childX},${midY - 6} 
+        path = `M${childX},${childY}
+            L${childX},${midY - 6}
             A6,6,0,0,${sweep},${childX + radius},${midY}
             L${mergeX - radius},${midY}
-            A6,6,0,0,${1 - sweep},${mergeX},${midY + 6} 
+            A6,6,0,0,${1 - sweep},${mergeX},${midY + 6}
             L${mergeX},${parentY}`;
 
         blockX = c1 < c2 ? c1 * 18 + 2 : c2 * 18 + 2;
@@ -61,11 +61,11 @@
         let midY = allowEarlyBreak && c1 > c2 ? parentY - 9 : childY + 9;
         let radius = c2 > c1 ? 6 : -6;
         let sweep = c2 > c1 ? 0 : 1;
-        path = `M${childX},${childY} 
-            L${childX},${midY - 6} 
+        path = `M${childX},${childY}
+            L${childX},${midY - 6}
             A6,6,0,0,${sweep},${childX + radius},${midY}
             L${parentX - radius},${midY}
-            A6,6,0,0,${1 - sweep},${parentX},${midY + 6} 
+            A6,6,0,0,${1 - sweep},${parentX},${midY + 6}
             L${parentX},${parentY}`;
 
         blockX = c1 < c2 ? c1 * 18 + 16 : c2 * 18 + 16;
@@ -78,7 +78,7 @@
 {#if !line.indirect}
     <foreignObject x={blockX} y={blockY} width={blockW} height={blockH}>
         <Zone {operand} let:target>
-            <div class="backdrop" class:target />
+            <div class="backdrop" class:target></div>
         </Zone>
     </foreignObject>
 {/if}
