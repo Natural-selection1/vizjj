@@ -152,7 +152,7 @@
                 <h2 slot="header">Loading...</h2>
             </Pane>
 
-            <div class="separator" />
+            <div class="separator"></div>
 
             <Pane />
         {:else if $repoConfigEvent.type == "Workspace"}
@@ -162,7 +162,7 @@
                     latest_query={$repoConfigEvent.latest_query} />
             {/key}
 
-            <div class="separator" />
+            <div class="separator"></div>
 
             <BoundQuery query={selection} let:data>
                 {#if data.type == "Detail"}
@@ -210,7 +210,7 @@
             </ModalOverlay>
         {/if}
 
-        <div class="separator" style="grid-area: 2/1/3/4" />
+        <div class="separator" style="grid-area: 2/1/3/4"></div>
 
         <StatusBar {target} />
 
