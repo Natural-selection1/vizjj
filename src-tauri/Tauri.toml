@@ -24,7 +24,7 @@ dragDropEnabled = false
 # "csp": null
 
 [bundle]
-active = true # Comment this out or set to false to disable bundle compilation
+# active = true # Comment this out or set to false to disable bundle compilation
 targets = "all"
 icon = [
     "icons/32x32.png",
