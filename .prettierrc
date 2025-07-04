@@ -10,6 +10,7 @@
     "overrides": [
         { "files": "*.svelte", "options": { "parser": "svelte" } },
         { "files": "*.yml", "options": { "tabWidth": 2 } },
+        { "files": "*.html", "options": { "tabWidth": 2 } },
         { "files": "*.json", "options": { "tabWidth": 2 } },
         { "files": "*.md", "options": { "tabWidth": 2, "printWidth": 80 } }
     ]
