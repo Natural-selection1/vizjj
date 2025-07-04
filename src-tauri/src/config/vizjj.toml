@@ -16,5 +16,5 @@ recent-workspaces = []
 # When set, bookmarks that are local-only or remote-only will be visually indicated.
 mark-unpushed-bookmarks = true
 
-# "light" or "dark". If not set, your OS settings will be used.
+# "light" or "dark". If not set, default dark.
 # theme-override =
