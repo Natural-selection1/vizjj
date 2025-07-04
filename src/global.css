@@ -3,9 +3,9 @@
 @import "@skeletonlabs/skeleton/optional/presets";
 @import "@skeletonlabs/skeleton/themes/cerberus";
 @source "../node_modules/@skeletonlabs/skeleton-svelte/dist"; */
-@import "modern-normalize";
-@import "@catppuccin/palette/css/catppuccin.css";
 
+@import "modern-normalize"; /* node_modules/modern-normalize/modern-normalize.css */
+@import "@catppuccin/palette/css/catppuccin.css"; /* node_modules/@catppuccin/palette/css/catppuccin.css */
 :root {
     overscroll-behavior: none;
     font-synthesis: none;
@@ -23,6 +23,7 @@
         sans-serif-condensed, sans-serif;
 }
 
+/* config.toml: vizjj.ui.theme-override = "light" 时生效 */
 #shell.light {
     /* catppuccin latte */
     --ctp-crust: var(--ctp-latte-crust); /* catppuccin */
@@ -56,7 +57,7 @@
     --ctp-rosewater: var(--ctp-latte-rosewater); /* catppuccin */
 }
 
-/* default dark */
+/* config.toml: vizjj.ui.theme-override = "dark" 时或未设置生效 */
 #shell,
 #shell.dark {
     --ctp-crust: var(--ctp-macchiato-crust); /* catppuccin */
