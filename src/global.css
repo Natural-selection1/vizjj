@@ -1,13 +1,10 @@
-/* @import "tailwindcss";
+@import "tailwindcss";
 @import "@skeletonlabs/skeleton";
 @import "@skeletonlabs/skeleton/optional/presets";
-@import "@skeletonlabs/skeleton/themes/cerberus";
-@source "../node_modules/@skeletonlabs/skeleton-svelte/dist"; */
-
-@import "modern-normalize"; /* node_modules/modern-normalize/modern-normalize.css */
+@import "@skeletonlabs/skeleton/themes/rose";
+@source "../node_modules/@skeletonlabs/skeleton-svelte/dist";
 @import "@catppuccin/palette/css/catppuccin.css"; /* node_modules/@catppuccin/palette/css/catppuccin.css */
 :root {
-    overscroll-behavior: none;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -21,10 +18,6 @@
     --stack-industrial:
         Bahnschrift, "DIN Alternate", "Franklin Gothic Medium", "Roboto", "Nimbus Sans",
         sans-serif-condensed, sans-serif;
-}
-
-/* config.toml: vizjj.ui.theme-override = "light" 时生效 */
-#shell.light {
     /* catppuccin latte */
     --ctp-crust: var(--ctp-latte-crust); /* catppuccin */
     --ctp-mantle: var(--ctp-latte-mantle); /* catppuccin */
@@ -55,111 +48,4 @@
     --ctp-pink: var(--ctp-latte-pink); /* catppuccin */
     --ctp-flamingo: var(--ctp-latte-flamingo); /* catppuccin */
     --ctp-rosewater: var(--ctp-latte-rosewater); /* catppuccin */
-}
-
-/* config.toml: vizjj.ui.theme-override = "dark" 时或未设置生效 */
-#shell,
-#shell.dark {
-    --ctp-crust: var(--ctp-macchiato-crust); /* catppuccin */
-    --ctp-mantle: var(--ctp-macchiato-mantle); /* catppuccin */
-    --ctp-base: var(--ctp-macchiato-base); /* catppuccin */
-    --ctp-surface0: var(--ctp-macchiato-surface0); /* catppuccin */
-    --ctp-surface1: var(--ctp-macchiato-surface1); /* catppuccin */
-    --ctp-surface2: var(--ctp-macchiato-surface2); /* catppuccin */
-    --ctp-overlay0: var(--ctp-macchiato-overlay0); /* catppuccin */
-    --ctp-overlay0-rgb: var(--ctp-latte-overlay0-rgb); /* catppuccin */
-    --ctp-overlay1: var(--ctp-macchiato-overlay1); /* catppuccin */
-    --ctp-overlay1-rgb: var(--ctp-latte-overlay1-rgb); /* catppuccin */
-    --ctp-overlay2: var(--ctp-macchiato-overlay2); /* catppuccin */
-    --ctp-overlay2-rgb: var(--ctp-latte-overlay2-rgb); /* catppuccin */
-    --ctp-subtext0: var(--ctp-macchiato-subtext0); /* catppuccin */
-    --ctp-subtext1: var(--ctp-macchiato-subtext1); /* catppuccin */
-    --ctp-text: var(--ctp-macchiato-text); /* catppuccin */
-    --ctp-lavender: var(--ctp-macchiato-lavender); /* catppuccin */
-    --ctp-blue: var(--ctp-macchiato-blue); /* catppuccin */
-    --ctp-sapphire: var(--ctp-macchiato-sapphire); /* catppuccin */
-    --ctp-sky: var(--ctp-macchiato-sky); /* catppuccin */
-    --ctp-teal: var(--ctp-macchiato-teal); /* catppuccin */
-    --ctp-green: var(--ctp-macchiato-green); /* catppuccin */
-    --ctp-yellow: var(--ctp-macchiato-yellow); /* catppuccin */
-    --ctp-peach: var(--ctp-macchiato-peach); /* catppuccin */
-    --ctp-maroon: var(--ctp-macchiato-maroon); /* catppuccin */
-    --ctp-red: var(--ctp-macchiato-red); /* catppuccin */
-    --ctp-mauve: var(--ctp-macchiato-mauve); /* catppuccin */
-    --ctp-pink: var(--ctp-macchiato-pink); /* catppuccin */
-    --ctp-flamingo: var(--ctp-macchiato-flamingo); /* catppuccin */
-    --ctp-rosewater: var(--ctp-macchiato-rosewater); /* catppuccin */
-}
-
-::selection {
-    background-color: transparent;
-    color: var(--ctp-rosewater); /* catppuccin */
-}
-
-textarea,
-select,
-input {
-    outline: none;
-    border: 1px solid var(--ctp-overlay0); /* catppuccin */
-    border-radius: 3px;
-    padding: 1px;
-
-    &:focus-visible {
-        border-color: var(--ctp-lavender); /* catppuccin */
-        border-width: 2px;
-        padding: 0;
-    }
-
-    caret-color: var(--ctp-rosewater); /* catppuccin */
-
-    background-color: var(--ctp-base); /* catppuccin */
-    color: var(--ctp-text); /* catppuccin */
-    scrollbar-color: var(--ctp-text) var(--ctp-base); /* catppuccin */
-
-    &:disabled {
-        background-color: transparent;
-    }
-
-    &::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-        background-color: var(--ctp-text); /* catppuccin */
-        border-radius: 6px;
-    }
-
-    &::-webkit-scrollbar-track {
-        background-color: var(--ctp-base); /* catppuccin */
-    }
-}
-
-h1,
-h2,
-h3 {
-    margin: 0; /* modern-normalize provides default margins that are being reset here */
-}
-
-ul,
-ol {
-    margin: 0; /* modern-normalize provides default margins that are being reset here */
-    padding: 0; /* modern-normalize provides default padding that are being reset here */
-}
-
-/* make generic elements drop-transparent */
-div,
-span,
-section,
-h3 {
-    pointer-events: none;
-}
-
-textarea,
-select,
-input,
-button,
-ol,
-ul,
-label {
-    pointer-events: all;
 }
