@@ -1,7 +1,10 @@
 <script lang="ts">
     import type { StoreRef } from "../messages/StoreRef";
 
-    export let ref: Extract<StoreRef, { type: "LocalBookmark" } | { type: "RemoteBookmark" }>;
+    interface Props {
+        ref: Extract<StoreRef, { type: "LocalBookmark" } | { type: "RemoteBookmark" }>;
+    }
+    let { ref }: Props = $props();
 </script>
 
 <span class="ref">

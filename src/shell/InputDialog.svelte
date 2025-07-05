@@ -10,9 +10,12 @@
         response: CustomEvent<InputResponse>;
     }
 
-    export let title: string;
-    export let detail: String;
-    export let fields: InputField[];
+    interface Props {
+        title: string;
+        detail: String;
+        fields: InputField[];
+    }
+    let { title, detail, fields }: Props = $props();
 
     let dispatch = createEventDispatcher();
 

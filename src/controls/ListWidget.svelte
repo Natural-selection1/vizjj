@@ -1,4 +1,4 @@
-<script lang="ts" context="module">
+<script lang="ts" module>
     export interface List {
         getSize(): number;
         getSelection(): number;
@@ -9,19 +9,30 @@
 
 <script lang="ts">
     import { onMount } from "svelte";
-
     import type { Operand } from "../messages/Operand";
 
     interface $$Slots {
         default: {};
     }
 
-    export let list: List;
-    export let type: Operand["type"];
-    export let descendant: string | undefined;
-    export let clientHeight = 0;
-    export let clientWidth = 0;
-    export let scrollTop = 0;
+    interface Props {
+        list: List;
+        type: Operand["type"];
+        descendant: string | undefined;
+        clientHeight?: number;
+        clientWidth?: number;
+        scrollTop?: number;
+        children?: import("svelte").Snippet;
+    }
+    let {
+        list,
+        type,
+        descendant,
+        clientHeight = $bindable(0),
+        clientWidth = $bindable(0),
+        scrollTop = $bindable(0),
+        children,
+    }: Props = $props();
 
     let activedescendant = `${type}-${descendant}`;
     let box: HTMLElement;
@@ -126,7 +137,7 @@
     bind:this={box}
     bind:clientHeight
     bind:clientWidth
-    on:keydown={onKeyDown}>
+    onkeydown={onKeyDown}>
     <slot />
 </ol>
 

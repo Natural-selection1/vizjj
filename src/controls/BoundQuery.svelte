@@ -12,7 +12,7 @@ Abstraction of dubious utility - it's only used in one place, because most IPC d
         default: { data: T };
     }
 
-    export let query: Query<T>;
+    let { query }: { query: Query<T> } = $props();
 
     let type = query.type;
 </script>

@@ -1,5 +1,10 @@
 <script lang="ts">
     import { hasModal } from "../stores";
+    interface Props {
+        header?: import("svelte").Snippet;
+        body?: import("svelte").Snippet;
+    }
+    let { header, body }: Props = $props();
 </script>
 
 <section inert={$hasModal}>

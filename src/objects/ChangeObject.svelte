@@ -7,26 +7,29 @@
     import Zone from "./Zone.svelte";
     import { changeSelectEvent } from "../stores";
 
-    export let header: RevHeader;
-    export let change: RevChange;
-    export let selected: boolean;
+    interface Props {
+        header: RevHeader;
+        change: RevChange;
+        selected: boolean;
+    }
+    let { header, change, selected }: Props = $props();
 
     let operand: Operand = { type: "Change", header, path: change.path };
 
-    let icon = "file";
-    let state: "add" | "change" | "remove" | null = null;
+    let icon = $state("file");
+    let fileState: "add" | "change" | "remove" | null = $state(null);
     switch (change.kind) {
         case "Added":
             icon = "file-plus";
-            state = "add";
+            fileState = "add";
             break;
         case "Deleted":
             icon = "file-minus";
-            state = "remove";
+            fileState = "remove";
             break;
         case "Modified":
             icon = "file";
-            state = "change";
+            fileState = "change";
             break;
     }
 
@@ -46,7 +49,7 @@
     let:hint>
     <Zone {operand} let:target>
         <div class="layout" class:target>
-            <Icon name={icon} state={context ? null : state} />
+            <Icon name={icon} state={context ? null : fileState} />
             <span>{hint ?? change.path.relative_path}</span>
         </div>
     </Zone>

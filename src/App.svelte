@@ -30,11 +30,9 @@
         revisionSelectEvent,
     } from "./stores.js";
 
-    let selection: Query<RevResult> = {
-        type: "wait",
-    };
+    let selection: Query<RevResult> = $state({ type: "wait" });
     // for open recent workspaces when error dialogs happen
-    let recentWorkspaces: string[] = [];
+    let recentWorkspaces: string[] = $state([]);
 
     document.addEventListener("keydown", (event) => {
         if (event.key === "o" && event.ctrlKey) {
@@ -67,15 +65,17 @@
     onEvent("vizjj://context/branch", mutateRef);
     onEvent("vizjj://input", requestInput);
 
-    $: if ($repoConfigEvent) loadRepo($repoConfigEvent);
-    $: if ($repoStatusEvent && $revisionSelectEvent) loadChange($revisionSelectEvent.id);
-    $: if (
-        $repoConfigEvent.type === "LoadError" ||
-        $repoConfigEvent.type === "TimeoutError" ||
-        $repoConfigEvent.type === "WorkerError"
-    ) {
-        queryRecentWorkspaces();
-    }
+    $effect(() => {
+        if ($repoConfigEvent) loadRepo($repoConfigEvent);
+    });
+    $effect(() => {
+        if ($repoStatusEvent && $revisionSelectEvent) loadChange($revisionSelectEvent.id);
+    });
+    $effect(() => {
+        if (["LoadError", "TimeoutError", "WorkerError"].includes($repoConfigEvent.type)) {
+            queryRecentWorkspaces();
+        }
+    });
 
     async function loadRepo(config: RepoConfig) {
         if (loadTimeout) {

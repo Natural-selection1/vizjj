@@ -1,8 +1,10 @@
 <script lang="ts">
     import type { RevAuthor } from "../messages/RevAuthor";
-    export let author: RevAuthor;
-    export let includeTimestamp: boolean = false;
-
+    interface Props {
+        author: RevAuthor;
+        includeTimestamp?: boolean;
+    }
+    let { author, includeTimestamp = false }: Props = $props();
     let datetime = new Date(author.timestamp);
 
     function relativeDate() {

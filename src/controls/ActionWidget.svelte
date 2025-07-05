@@ -1,22 +1,26 @@
 <script lang="ts">
     import { dragOverWidget, hasModal } from "../stores";
 
-    export let tip: string = "";
-    export let onClick: (event: MouseEvent) => void;
-    export let safe: boolean = false;
-    export let disabled: boolean = false;
+    interface Props {
+        tip?: string;
+        onClick: (event: MouseEvent) => void;
+        safe?: boolean;
+        disabled?: boolean;
+        children?: import("svelte").Snippet;
+    }
+    let { tip = "", onClick, safe = false, disabled = false, children }: Props = $props();
 </script>
 
 {#if disabled || (!safe && $hasModal)}
-    <button disabled class:safe on:dragenter={dragOverWidget} on:dragover={dragOverWidget}>
+    <button disabled class:safe ondragenter={dragOverWidget} ondragover={dragOverWidget}>
         <slot />
     </button>
 {:else}
     <button
         class:safe
-        on:click={onClick}
-        on:dragenter={dragOverWidget}
-        on:dragover={dragOverWidget}
+        onclick={onClick}
+        ondragenter={dragOverWidget}
+        ondragover={dragOverWidget}
         title={safe ? "" : tip}>
         <slot />
     </button>

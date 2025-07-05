@@ -10,15 +10,19 @@
         change: CustomEvent<Event>;
     }
 
-    export let id: string | null = null;
-    export let options: T[];
-    export let value: string;
+    interface Props {
+        id?: string | null;
+        options: T[];
+        value: string;
+        children?: import("svelte").Snippet<[any]>;
+    }
+    let { id = null, options, value = $bindable(), children }: Props = $props();
 
     let dispatch = createEventDispatcher();
 </script>
 
 <div class="wrapper">
-    <select class="select" {id} bind:value on:change={(event) => dispatch("change", event)}>
+    <select class="select" {id} bind:value onchange={(event) => dispatch("change", event)}>
         {#each options as option}
             <option selected={value == option.value} value={option.value}>
                 <slot {option}>{option.value}</slot>

@@ -19,17 +19,21 @@ Core component for direct-manipulation objects. A drag&drop source.
         dblclick: CustomEvent<MouseEvent>;
     }
 
-    export let suffix: string | null = null;
-    export let label: string;
-    export let selected: boolean = false;
-    export let conflicted: boolean;
-    export let operand: Operand;
+    interface Props {
+        suffix?: string | null;
+        label: string;
+        selected?: boolean;
+        conflicted: boolean;
+        operand: Operand;
+        children?: import("svelte").Snippet<[any]>;
+    }
+    let { suffix = null, label, selected = false, conflicted, operand, children }: Props = $props();
 
     let dispatch = createEventDispatcher();
 
     let id = suffix == null ? null : `${operand.type}-${suffix}`;
-    let dragging: boolean;
-    let dragHint: string | null = null;
+    let dragging: boolean = $state(false);
+    let dragHint: string | null = $state(null);
 
     function onClick(event: MouseEvent) {
         dispatch("click", event);
@@ -88,11 +92,11 @@ Core component for direct-manipulation objects. A drag&drop source.
     role="option"
     aria-label={label}
     aria-selected={selected}
-    on:click={onClick}
-    on:dblclick={onDoubleClick}
-    on:contextmenu={onMenu}
-    on:dragstart={onDragStart}
-    on:dragend={onDragEnd}>
+    onclick={onClick}
+    ondblclick={onDoubleClick}
+    oncontextmenu={onMenu}
+    ondragstart={onDragStart}
+    ondragend={onDragEnd}>
     <slot context={dragging || $currentContext == operand} hint={dragHint} />
 </button>
 

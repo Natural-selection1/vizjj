@@ -2,9 +2,11 @@
     import type { ChangeId } from "../messages/ChangeId";
     import type { CommitId } from "../messages/CommitId";
     import { currentTarget } from "../stores";
-    export let id: ChangeId | CommitId;
-    export let pronoun: boolean = false;
-
+    interface Props {
+        id: ChangeId | CommitId;
+        pronoun?: boolean;
+    }
+    let { id, pronoun = false }: Props = $props();
     let suffix = id.rest.substring(0, 8 - id.prefix.length);
 </script>
 

@@ -11,10 +11,13 @@
     import AuthorSpan from "../controls/AuthorSpan.svelte";
     import EmojiText from "../controls/EmojiText.svelte";
 
-    export let header: RevHeader;
-    export let child: RevHeader | null = null;
-    export let selected: boolean; // same as the imported event, but parent may want to force a value
-    export let noBranches: boolean = false;
+    interface Props {
+        header: RevHeader;
+        child?: RevHeader | null;
+        selected: boolean; // same as the imported event, but parent may want to force a value
+        noBranches?: boolean;
+    }
+    let { header, child = null, selected, noBranches = false }: Props = $props();
 
     let operand: Operand = child ? { type: "Parent", header, child } : { type: "Revision", header };
 

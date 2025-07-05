@@ -1,7 +1,10 @@
 <script lang="ts">
     import sprite from "feather-icons/dist/feather-sprite.svg";
-    export let name: string;
-    export let state: "add" | "change" | "remove" | null = null;
+    interface Props {
+        name: string;
+        state?: "add" | "change" | "remove" | null;
+    }
+    let { name, state = null }: Props = $props();
 </script>
 
 <svg

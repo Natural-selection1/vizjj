@@ -18,12 +18,14 @@
         repoStatusEvent,
     } from "../stores";
 
-    export let target: boolean;
+    let { target }: { target: boolean } = $props();
 
-    let dropHint: RichHint | null = null;
-    let maybe = false;
+    let dropHint: RichHint | null = $state(null);
+    let maybe = $state(false);
 
-    $: setDropHint($currentSource, $currentTarget);
+    $effect(() => {
+        setDropHint($currentSource, $currentTarget);
+    });
 
     function setDropHint(source: Operand | null, target: Operand | null) {
         maybe = false;
