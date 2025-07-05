@@ -2,6 +2,8 @@
     import { onMount } from "svelte";
     import { hasModal } from "../stores";
 
+    let { children }: { children?: import("svelte").Snippet } = $props();
+
     onMount(() => {
         $hasModal = true;
         return () => {

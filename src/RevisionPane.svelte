@@ -17,49 +17,55 @@
     import Pane from "./shell/Pane.svelte";
     import { changeSelectEvent, dragOverWidget } from "./stores";
 
-    export let rev: Extract<RevResult, { type: "Detail" }>;
+    let { rev }: { rev: Extract<RevResult, { type: "Detail" }> } = $props();
+
+    let shortChangeId = $derived(getShortId(rev.header.id.change));
+    let standardChangeId = $derived(getStandardId(rev.header.id.change));
+    let shortCommitId = $derived(getShortId(rev.header.id.commit));
+    let standardCommitId = $derived(getStandardId(rev.header.id.commit));
 
     const CONTEXT = 3;
-
-    let mutator = new RevisionMutator(rev.header);
-
-    const currentDescription = rev.header.description.lines.join("\n");
-    let fullDescription = currentDescription;
-    $: descriptionChanged = fullDescription !== currentDescription;
-    function updateDescription() {
-        mutator.onDescribe(fullDescription, resetAuthor);
-    }
-
-    let resetAuthor = false;
-
-    let unresolvedConflicts = rev.conflicts.filter(
-        (conflict) =>
-            rev.changes.findIndex(
-                (change) => !change.has_conflict && change.path.repo_path == conflict.path.repo_path
-            ) == -1
-    );
-
-    let syntheticChanges = rev.changes
-        .concat(
-            unresolvedConflicts.map((conflict) => ({
-                kind: "None",
-                path: conflict.path,
-                has_conflict: true,
-                hunks: [conflict.hunk],
-            }))
+    const currentDescription = $derived(rev.header.description.lines.join("\n"));
+    let mutator = $state(new RevisionMutator(rev.header));
+    let fullDescription = $derived(currentDescription);
+    let descriptionChanged = $derived(fullDescription !== currentDescription);
+    let resetAuthor = $state(false);
+    let unresolvedConflicts = $derived.by(() =>
+        rev.conflicts.filter(
+            (conflict) =>
+                rev.changes.findIndex(
+                    (change) =>
+                        !change.has_conflict && change.path.repo_path == conflict.path.repo_path
+                ) == -1
         )
-        .sort((a, b) => a.path.relative_path.localeCompare(b.path.relative_path));
-
-    let unset = true;
+    );
+    let syntheticChanges = $derived.by(() =>
+        rev.changes
+            .concat(
+                unresolvedConflicts.map((conflict) => ({
+                    kind: "None",
+                    path: conflict.path,
+                    has_conflict: true,
+                    hunks: [conflict.hunk],
+                }))
+            )
+            .sort((a, b) => a.path.relative_path.localeCompare(b.path.relative_path))
+    );
     let selectedChange = $changeSelectEvent;
-    for (let change of syntheticChanges) {
-        if (selectedChange?.path?.repo_path === change.path.repo_path) {
-            unset = false;
+    let unset = $derived.by(() => {
+        for (let change of syntheticChanges) {
+            if (selectedChange?.path?.repo_path === change.path.repo_path) {
+                return false;
+            }
         }
-    }
-    if (unset) {
-        changeSelectEvent.set(syntheticChanges[0]);
-    }
+        return true;
+    });
+
+    $effect(() => {
+        if (unset) {
+            changeSelectEvent.set(syntheticChanges[0]);
+        }
+    });
 
     let list: List = {
         getSize() {
@@ -79,6 +85,10 @@
     };
 
     onEvent<string>("vizjj://menu/revision", (event) => mutator.handle(event));
+
+    function updateDescription() {
+        mutator.onDescribe(fullDescription, resetAuthor);
+    }
 
     function minLines(change: RevChange): number {
         // let total = 0;
@@ -116,10 +126,6 @@
             navigator.clipboard.writeText(getShortId(id));
         }
     }
-    $: shortChangeId = getShortId(rev.header.id.change);
-    $: standardChangeId = getStandardId(rev.header.id.change);
-    $: shortCommitId = getShortId(rev.header.id.commit);
-    $: standardCommitId = getStandardId(rev.header.id.commit);
 </script>
 
 <Pane>
@@ -169,9 +175,9 @@
             spellcheck="false"
             disabled={rev.header.is_immutable}
             bind:value={fullDescription}
-            on:dragenter={dragOverWidget}
-            on:dragover={dragOverWidget}
-            on:keydown={(ev) => {
+            ondragenter={dragOverWidget}
+            ondragover={dragOverWidget}
+            onkeydown={(ev) => {
                 if (descriptionChanged && ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) {
                     updateDescription();
                 }

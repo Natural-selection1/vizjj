@@ -11,8 +11,11 @@
     import Pane from "./shell/Pane.svelte";
     import { repoStatusEvent, revisionSelectEvent } from "./stores.js";
 
-    export let default_query: string;
-    export let latest_query: string;
+    interface Props {
+        default_query: string;
+        latest_query: string;
+    }
+    let { default_query, latest_query }: Props = $props();
 
     const presets = [
         { label: "Default", value: default_query },
@@ -24,16 +27,22 @@
         { label: "All Revisions", value: "all()" },
     ];
 
-    let choices: ReturnType<typeof getChoices>;
-    let entered_query = latest_query;
-    let graphRows: EnhancedRow[] | undefined;
+    let entered_query = $state(latest_query);
+    let choices: ReturnType<typeof getChoices> = $derived.by(() => {
+        if (entered_query) {
+            return getChoices();
+        }
+        // todo: this default value seems not to the best
+        return [{ label: "", value: "" }];
+    });
 
-    let logHeight = 0;
-    let logWidth = 0;
-    let logScrollTop = 0;
+    let graphRows: EnhancedRow[] | undefined = $state();
+    let logHeight = $state(0);
+    let logWidth = $state(0);
+    let logScrollTop = $state(0);
 
     // all these calculations are not efficient. probably doesn't matter
-    let list: List = {
+    let list: List = $state({
         getSize() {
             return graphRows?.length ?? 0;
         },
@@ -52,14 +61,15 @@
                 new RevisionMutator(graphRows![row].revision).onEdit();
             }
         },
-    };
+    });
 
     onMount(() => {
         loadLog();
     });
 
-    $: if (entered_query) choices = getChoices();
-    $: if ($repoStatusEvent) reloadLog();
+    $effect(() => {
+        if ($repoStatusEvent) reloadLog();
+    });
 
     function getChoices() {
         let choices = presets;
@@ -68,9 +78,7 @@
                 return choices;
             }
         }
-
         choices = [{ label: "Custom", value: entered_query }, ...presets];
-
         return choices;
     }
 
@@ -172,7 +180,7 @@
         <SelectWidget options={choices} bind:value={entered_query} on:change={reloadLog}>
             <svelte:fragment let:option>{option.label}</svelte:fragment>
         </SelectWidget>
-        <input class="input" type="text" bind:value={entered_query} on:change={reloadLog} />
+        <input class="input" type="text" bind:value={entered_query} onchange={reloadLog} />
     </div>
 
     <ListWidget

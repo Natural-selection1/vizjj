@@ -1,8 +1,12 @@
 <script lang="ts">
     import { dragOverWidget } from "../stores";
 
-    export let id: string | null = null;
-    export let checked: boolean;
+    interface Props {
+        id?: string | null;
+        checked: boolean;
+        children?: import("svelte").Snippet;
+    }
+    let { id = null, checked = $bindable(), children }: Props = $props();
 </script>
 
 <label>
@@ -10,8 +14,8 @@
         {id}
         type="checkbox"
         bind:checked
-        on:dragenter={dragOverWidget}
-        on:dragover={dragOverWidget} />
+        ondragenter={dragOverWidget}
+        ondragover={dragOverWidget} />
     <slot />
 </label>
 

@@ -6,9 +6,13 @@
         default: CustomEvent<void>;
     }
 
-    export let title: string;
-    export let error: boolean = false;
-
+    interface Props {
+        title: string;
+        error?: boolean;
+        children?: import("svelte").Snippet;
+        commands?: import("svelte").Snippet;
+    }
+    let { title, error = false, children, commands }: Props = $props();
     let dispatch = createEventDispatcher();
 
     onMount(() => {

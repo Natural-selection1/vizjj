@@ -1,7 +1,7 @@
 <script lang="ts">
     import { gitmojis } from "gitmojis";
 
-    export let text: string;
+    let { text }: { text: string } = $props();
 
     const emojiMap = new Map();
     gitmojis.forEach((gitmoji) => {
@@ -17,7 +17,7 @@
         });
     }
 
-    $: renderedText = renderEmoji(text);
+    let renderedText = $derived(renderEmoji(text));
 </script>
 
 <span>{renderedText}</span>

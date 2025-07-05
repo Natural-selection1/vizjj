@@ -9,69 +9,77 @@
     import Object from "./Object.svelte";
     import Zone from "./Zone.svelte";
 
-    export let header: RevHeader;
-    export let ref: Extract<StoreRef, { type: "LocalBookmark" | "RemoteBookmark" }>;
+    interface Props {
+        header: RevHeader;
+        ref: Extract<StoreRef, { type: "LocalBookmark" | "RemoteBookmark" }>;
+    }
+    let { header, ref }: Props = $props();
 
     let operand: Operand = { type: "Ref", header, ref };
 
-    let label: string;
-    let state: "add" | "change" | "remove";
-    let disconnected: boolean;
-    let tip: string;
-
-    switch (ref.type) {
-        case "LocalBookmark":
-            label = ref.branch_name;
-            state = ref.is_synced ? "change" : "add";
-            disconnected = ref.available_remotes == 0 && ref.potential_remotes > 0;
-
-            if (disconnected) {
-                tip = "local-only bookmark";
-            } else {
-                tip = "local bookmark";
-                if (ref.tracking_remotes.length >= 0) {
-                    tip = tip + " (tracking ";
-                    let first = true;
-                    for (let r of ref.tracking_remotes) {
-                        if (first) {
-                            first = false;
-                        } else {
-                            tip = tip + ", ";
+    let branchInfo = $derived.by(() => {
+        switch (ref.type) {
+            case "LocalBookmark":
+                return {
+                    label: ref.branch_name,
+                    branchState: ref.is_synced ? "change" : "add",
+                    disconnected: ref.available_remotes == 0 && ref.potential_remotes > 0,
+                };
+            case "RemoteBookmark":
+                return {
+                    label: `${ref.branch_name}@${ref.remote_name}`,
+                    branchState: ref.is_tracked ? "remove" : "change",
+                    disconnected: ref.is_tracked && ref.is_absent,
+                };
+        }
+    });
+    let label = $derived(branchInfo.label);
+    let branchState = $derived(branchInfo.branchState) as "add" | "change" | "remove";
+    let disconnected = $derived.by(() => {
+        if (!getContext<Settings>("settings").markUnpushedBranches) {
+            return false;
+        }
+        return branchInfo.disconnected;
+    });
+    let tip = $derived.by(() => {
+        switch (ref.type) {
+            case "LocalBookmark":
+                if (disconnected) {
+                    return "local-only bookmark";
+                } else {
+                    let tipText = "local bookmark";
+                    if (ref.tracking_remotes.length > 0) {
+                        tipText += " (tracking ";
+                        let first = true;
+                        for (let r of ref.tracking_remotes) {
+                            if (first) {
+                                first = false;
+                            } else {
+                                tipText += ", ";
+                            }
+                            tipText += r;
                         }
-                        tip = tip + r;
+                        tipText += ")";
                     }
-                    tip = tip + ")";
+                    return tipText;
                 }
-            }
-
-            break;
-
-        case "RemoteBookmark":
-            label = `${ref.branch_name}@${ref.remote_name}`;
-            state = ref.is_tracked ? "remove" : "change"; // we haven't combined this remote, and it has a local = red
-            disconnected = ref.is_tracked && ref.is_absent;
-
-            tip = "remote bookmark";
-            if (disconnected) {
-                tip = tip + " (deleting)";
-            } else if (ref.is_tracked) {
-                tip = tip + " (tracked)";
-            } else {
-                tip = tip + " (untracked)";
-            }
-
-            break;
-    }
-
-    if (!getContext<Settings>("settings").markUnpushedBranches) {
-        disconnected = false;
-    }
+            case "RemoteBookmark":
+                let tipText = "remote bookmark";
+                if (disconnected) {
+                    return tipText + " (deleting)";
+                } else if (ref.is_tracked) {
+                    return tipText + " (tracked)";
+                } else {
+                    return tipText + " (untracked)";
+                }
+        }
+    });
 </script>
 
 <Object {operand} {label} conflicted={ref.has_conflict} let:context let:hint={dragHint}>
     <Zone {operand} let:target let:hint={dropHint}>
         <Chip {context} {target} {disconnected} {tip}>
-            <Icon name="bookmark" state={context ? null : state} />
+            <Icon name="bookmark" state={context ? null : branchState} />
             <span>{dragHint ?? dropHint ?? label}</span>
         </Chip>
     </Zone>

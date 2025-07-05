@@ -3,9 +3,13 @@
     import Icon from "../controls/Icon.svelte";
     import ModalDialog from "./ModalDialog.svelte";
 
-    export let title: string;
-    export let severe: boolean = false;
-    export let onClose: (() => void) | null = null;
+    interface Props {
+        title: string;
+        severe?: boolean;
+        onClose?: (() => void) | null;
+        children?: import("svelte").Snippet;
+    }
+    let { title, severe = false, onClose = null, children }: Props = $props();
 
     function handleCancel() {
         if (onClose) {

@@ -4,8 +4,11 @@
     import type { Operand } from "../messages/Operand";
     import Chip from "../controls/Chip.svelte";
 
-    export let header: RevHeader;
-    export let ref: Extract<StoreRef, { type: "Tag" }>;
+    interface Props {
+        header: RevHeader;
+        ref: Extract<StoreRef, { type: "Tag" }>;
+    }
+    let { header, ref }: Props = $props();
 
     let operand: Operand = { type: "Ref", header, ref };
 </script>

@@ -1,9 +1,20 @@
 <script lang="ts">
-    export let context: boolean;
-    export let target: boolean;
-    export let disconnected: boolean = false;
-    export let immobile: boolean = false;
-    export let tip: string = "";
+    interface Props {
+        context: boolean;
+        target: boolean;
+        disconnected?: boolean;
+        immobile?: boolean;
+        tip?: string;
+        children?: import("svelte").Snippet;
+    }
+    let {
+        context,
+        target,
+        disconnected = false,
+        immobile = false,
+        tip = "",
+        children,
+    }: Props = $props();
 </script>
 
 <div class="chip" class:context class:target class:disconnected class:immobile title={tip}>

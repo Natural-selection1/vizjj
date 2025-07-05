@@ -12,12 +12,15 @@ A drop target for direct-manipulation objects.
         default: { target: boolean; hint: string | null };
     }
 
-    export let operand: Operand;
-    export let alwaysTarget: boolean = false;
+    interface Props {
+        operand: Operand;
+        alwaysTarget?: boolean;
+        children?: import("svelte").Snippet<[any]>;
+    }
+    let { operand, alwaysTarget = false, children }: Props = $props();
 
-    let dropHint: string | null = null;
-    let target = false;
-    $: target = match($currentTarget);
+    let dropHint: string | null = $state(null);
+    let target = $derived.by(() => match($currentTarget));
 
     function match(target: Operand | null): boolean {
         return (
@@ -69,10 +72,10 @@ A drop target for direct-manipulation objects.
     role="presentation"
     class="zone"
     class:hint={dropHint}
-    on:dragenter={onDragOver}
-    on:dragover={onDragOver}
-    on:dragleave={onDragLeave}
-    on:drop={onDrop}>
+    ondragenter={onDragOver}
+    ondragover={onDragOver}
+    ondragleave={onDragLeave}
+    ondrop={onDrop}>
     <slot {target} hint={dropHint} />
 </div>
 
