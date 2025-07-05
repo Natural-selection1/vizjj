@@ -16,7 +16,7 @@
         bind:checked
         ondragenter={dragOverWidget}
         ondragover={dragOverWidget} />
-    <slot />
+    {@render children?.()}
 </label>
 
 <style>
