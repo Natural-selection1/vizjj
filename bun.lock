@@ -10,7 +10,7 @@
         "@tauri-apps/plugin-shell": "^2.0.0-beta.0",
         "feather-icons": "^4.29.1",
         "gitmojis": "^3.15.0",
-        "modern-normalize": "^2.0.0",
+        "modern-normalize": "3.0.1",
         "tailwindcss": "4.1.11",
       },
       "devDependencies": {
@@ -361,7 +361,7 @@
 
     "mkdirp": ["mkdirp@3.0.1", "https://registry.npmmirror.com/mkdirp/-/mkdirp-3.0.1.tgz", { "bin": { "mkdirp": "dist/cjs/src/bin.js" } }, "sha512-+NsyUUAZDmo6YVHzL/stxSu3t9YS1iljliy3BSDrXJ/dkn1KYdmtZODGGjLcc9XLgVVpH4KshHB8XmZgMhaBXg=="],
 
-    "modern-normalize": ["modern-normalize@2.0.0", "https://registry.npmmirror.com/modern-normalize/-/modern-normalize-2.0.0.tgz", {}, "sha512-CxBoEVKh5U4DH3XuNbc5ONLF6dQBc8dSc7pdZ1957FGbIO5JBqGqqchhET9dTexri8/pk9xBL6+5ceOtCIp1QA=="],
+    "modern-normalize": ["modern-normalize@3.0.1", "https://registry.npmmirror.com/modern-normalize/-/modern-normalize-3.0.1.tgz", {}, "sha512-VqlMdYi59Uch6fnUPxnpijWUQe+TW6zeWCvyr6Mb7JibheHzSuAAoJi2c71ZwIaWKpECpGpYHoaaBp6rBRr+/g=="],
 
     "mri": ["mri@1.2.0", "https://registry.npmmirror.com/mri/-/mri-1.2.0.tgz", {}, "sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA=="],
 
