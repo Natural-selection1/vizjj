@@ -13,7 +13,7 @@
 </script>
 
 <div id="overlay">
-    <slot />
+    {@render children?.()}
 </div>
 
 <style>

@@ -19,7 +19,7 @@
 </script>
 
 <ModalDialog {title} error={severe} on:cancel={handleCancel}>
-    <slot />
+    {@render children?.()}
 
     <svelte:fragment slot="commands">
         {#if onClose}

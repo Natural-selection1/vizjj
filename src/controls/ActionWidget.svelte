@@ -13,7 +13,7 @@
 
 {#if disabled || (!safe && $hasModal)}
     <button disabled class:safe ondragenter={dragOverWidget} ondragover={dragOverWidget}>
-        <slot />
+        {@render children?.()}
     </button>
 {:else}
     <button
@@ -22,7 +22,7 @@
         ondragenter={dragOverWidget}
         ondragover={dragOverWidget}
         title={safe ? "" : tip}>
-        <slot />
+        {@render children?.()}
     </button>
 {/if}
 

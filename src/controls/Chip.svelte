@@ -18,7 +18,7 @@
 </script>
 
 <div class="chip" class:context class:target class:disconnected class:immobile title={tip}>
-    <slot />
+    {@render children?.()}
 </div>
 
 <style>

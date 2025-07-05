@@ -138,7 +138,7 @@
     bind:clientHeight
     bind:clientWidth
     onkeydown={onKeyDown}>
-    <slot />
+    {@render children?.()}
 </ol>
 
 <style>
