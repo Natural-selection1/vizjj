@@ -9,10 +9,10 @@
 
 <section inert={$hasModal}>
     <div class="header">
-        <slot name="header" />
+        {@render header?.()}
     </div>
     <div class="body">
-        <slot name="body" />
+        {@render body?.()}
     </div>
 </section>
 

@@ -148,7 +148,9 @@
         class={$repoConfigEvent?.type == "Workspace" ? $repoConfigEvent.theme_override : ""}>
         {#if $repoConfigEvent.type == "Initial"}
             <Pane>
-                <h2 slot="header">Loading...</h2>
+                {#snippet header()}
+                    <h2>Loading...</h2>
+                {/snippet}
             </Pane>
             <div class="separator"></div>
             <Pane />

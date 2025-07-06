@@ -129,138 +129,145 @@
 </script>
 
 <Pane>
-    <h2 slot="header" class="header">
-        <span class="title">
-            <ActionWidget
-                tip={`click to copy ${shortChangeId}\
-                \nCtrl/⌘+click to copy ${standardChangeId}`}
-                onClick={(event) => {
-                    copyId(rev.header.id.change, event);
-                }}>
-                <Icon name="copy" /><IdSpan id={rev.header.id.change} />
-            </ActionWidget>
-            |
-            <ActionWidget
-                tip={`click to copy ${shortCommitId}\
-                \nCtrl/⌘+click to copy ${standardCommitId}`}
-                onClick={(event) => {
-                    copyId(rev.header.id.commit, event);
-                }}>
-                <Icon name="copy" /><IdSpan id={rev.header.id.commit} />
-            </ActionWidget>
-            {#if rev.header.is_working_copy}
-                | Working copy
-            {/if}
-            {#if rev.header.is_immutable}
-                | Immutable
-            {/if}
-        </span>
+    {#snippet header()}
+        <h2 class="header">
+            <span class="title">
+                <ActionWidget
+                    tip={`click to copy ${shortChangeId}\
+                    \nCtrl/⌘+click to copy ${standardChangeId}`}
+                    onClick={(event) => {
+                        copyId(rev.header.id.change, event);
+                    }}>
+                    <Icon name="copy" /><IdSpan id={rev.header.id.change} />
+                </ActionWidget>
+                |
+                <ActionWidget
+                    tip={`click to copy ${shortCommitId}\
+                    \nCtrl/⌘+click to copy ${standardCommitId}`}
+                    onClick={(event) => {
+                        copyId(rev.header.id.commit, event);
+                    }}>
+                    <Icon name="copy" /><IdSpan id={rev.header.id.commit} />
+                </ActionWidget>
+                {#if rev.header.is_working_copy}
+                    | Working copy
+                {/if}
+                {#if rev.header.is_immutable}
+                    | Immutable
+                {/if}
+            </span>
 
-        <div class="checkout-commands">
-            <ActionWidget
-                tip="make working copy"
-                onClick={mutator.onEdit}
-                disabled={rev.header.is_immutable || rev.header.is_working_copy}>
-                <Icon name="edit-2" /> Edit
-            </ActionWidget>
-            <ActionWidget tip="create a child" onClick={mutator.onNew}>
-                <Icon name="edit" /> New
-            </ActionWidget>
-        </div>
-    </h2>
+            <div class="checkout-commands">
+                <ActionWidget
+                    tip="make working copy"
+                    onClick={mutator.onEdit}
+                    disabled={rev.header.is_immutable || rev.header.is_working_copy}>
+                    <Icon name="edit-2" /> Edit
+                </ActionWidget>
+                <ActionWidget tip="create a child" onClick={mutator.onNew}>
+                    <Icon name="edit" /> New
+                </ActionWidget>
+            </div>
+        </h2>
+    {/snippet}
 
-    <div slot="body" class="body">
-        <textarea
-            class="description"
-            spellcheck="false"
-            disabled={rev.header.is_immutable}
-            bind:value={fullDescription}
-            ondragenter={dragOverWidget}
-            ondragover={dragOverWidget}
-            onkeydown={(ev) => {
-                if (descriptionChanged && ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) {
-                    updateDescription();
-                }
-            }}></textarea>
+    {#snippet body()}
+        <div class="body">
+            <textarea
+                class="description"
+                spellcheck="false"
+                disabled={rev.header.is_immutable}
+                bind:value={fullDescription}
+                ondragenter={dragOverWidget}
+                ondragover={dragOverWidget}
+                onkeydown={(ev) => {
+                    if (descriptionChanged && ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) {
+                        updateDescription();
+                    }
+                }}></textarea>
 
-        <div class="signature-commands">
-            <span>Author:</span>
-            <AuthorSpan author={rev.header.author} includeTimestamp />
-            <CheckWidget bind:checked={resetAuthor}>Reset</CheckWidget>
-            <span></span>
-            <ActionWidget
-                tip="set commit message"
-                onClick={() => mutator.onDescribe(fullDescription, resetAuthor)}
-                disabled={rev.header.is_immutable || !descriptionChanged}>
-                <Icon name="file-text" /> Describe
-            </ActionWidget>
-        </div>
+            <div class="signature-commands">
+                <span>Author:</span>
+                <AuthorSpan author={rev.header.author} includeTimestamp />
+                <CheckWidget bind:checked={resetAuthor}>Reset</CheckWidget>
+                <span></span>
+                <ActionWidget
+                    tip="set commit message"
+                    onClick={() => mutator.onDescribe(fullDescription, resetAuthor)}
+                    disabled={rev.header.is_immutable || !descriptionChanged}>
+                    <Icon name="file-text" /> Describe
+                </ActionWidget>
+            </div>
 
-        {#if rev.parents.length > 0}
-            <Zone operand={{ type: "Merge", header: rev.header }} let:target>
-                <div class="parents" class:target>
-                    {#each rev.parents as parent}
-                        <div class="parent">
-                            <span>Parent:</span>
-                            <RevisionObject
-                                header={parent}
-                                child={rev.header}
-                                selected={false}
-                                noBranches />
+            {#if rev.parents.length > 0}
+                <Zone operand={{ type: "Merge", header: rev.header }}>
+                    {#snippet children({ target })}
+                        <div class="parents" class:target>
+                            {#each rev.parents as parent}
+                                <div class="parent">
+                                    <span>Parent:</span>
+                                    <RevisionObject
+                                        header={parent}
+                                        child={rev.header}
+                                        selected={false}
+                                        noBranches />
+                                </div>
+                            {/each}
                         </div>
-                    {/each}
-                </div>
-            </Zone>
-        {/if}
+                    {/snippet}
+                </Zone>
+            {/if}
 
-        {#if syntheticChanges.length > 0}
-            <div class="move-commands">
-                <span>Changes:</span>
-                <ActionWidget
-                    tip="move all changes to parent"
-                    onClick={mutator.onSquash}
-                    disabled={rev.header.is_immutable || rev.header.parent_ids.length != 1}>
-                    <Icon name="upload" /> Squash
-                </ActionWidget>
-                <ActionWidget
-                    tip="copy all changes from parent"
-                    onClick={mutator.onRestore}
-                    disabled={rev.header.is_immutable || rev.header.parent_ids.length != 1}>
-                    <Icon name="download" /> Restore
-                </ActionWidget>
-            </div>
-
-            <ListWidget {list} type="Change" descendant={$changeSelectEvent?.path.repo_path}>
-                <div class="changes">
-                    {#each syntheticChanges as change}
-                        <ChangeObject
-                            {change}
-                            header={rev.header}
-                            selected={$changeSelectEvent?.path?.repo_path ===
-                                change.path.repo_path} />
-                        {#if $changeSelectEvent?.path?.repo_path === change.path.repo_path}
-                            <div class="change" style="--lines: {minLines(change)}">
-                                {#each change.hunks as hunk}
-                                    <div class="hunk">
-                                        @@ -{hunk.location.from_file.start},{hunk.location.from_file
-                                            .len} +{hunk.location.to_file.start},{hunk.location
-                                            .to_file.len} @@
-                                    </div>
-                                    <pre class="diff">{#each hunk.lines.lines as line}<span
-                                                class={lineColour(line)}>{line}</span
-                                            >{/each}</pre>
-                                {/each}
-                            </div>
-                        {/if}
-                    {/each}
+            {#if syntheticChanges.length > 0}
+                <div class="move-commands">
+                    <span>Changes:</span>
+                    <ActionWidget
+                        tip="move all changes to parent"
+                        onClick={mutator.onSquash}
+                        disabled={rev.header.is_immutable || rev.header.parent_ids.length != 1}>
+                        <Icon name="upload" /> Squash
+                    </ActionWidget>
+                    <ActionWidget
+                        tip="copy all changes from parent"
+                        onClick={mutator.onRestore}
+                        disabled={rev.header.is_immutable || rev.header.parent_ids.length != 1}>
+                        <Icon name="download" /> Restore
+                    </ActionWidget>
                 </div>
-            </ListWidget>
-        {:else}
-            <div class="move-commands">
-                <span>Changes: <span class="no-changes">(empty)</span></span>
-            </div>
-        {/if}
-    </div>
+
+                <ListWidget {list} type="Change" descendant={$changeSelectEvent?.path.repo_path}>
+                    <div class="changes">
+                        {#each syntheticChanges as change}
+                            <ChangeObject
+                                {change}
+                                header={rev.header}
+                                selected={$changeSelectEvent?.path?.repo_path ===
+                                    change.path.repo_path} />
+                            {#if $changeSelectEvent?.path?.repo_path === change.path.repo_path}
+                                <div class="change" style="--lines: {minLines(change)}">
+                                    {#each change.hunks as hunk}
+                                        <div class="hunk">
+                                            @@ -{hunk.location.from_file.start},
+                                            {hunk.location.from_file.len}
+                                            +{hunk.location.to_file.start},
+                                            {hunk.location.to_file.len} @@
+                                        </div>
+                                        <pre class="diff">{#each hunk.lines.lines as line}<span
+                                                    class={lineColour(line)}>{line}</span
+                                                >{/each}</pre>
+                                    {/each}
+                                </div>
+                            {/if}
+                        {/each}
+                    </div>
+                </ListWidget>
+            {:else}
+                <div class="move-commands">
+                    <span>Changes: <span class="no-changes">(empty)</span></span>
+                </div>
+            {/if}
+        </div>
+    {/snippet}
 </Pane>
 
 <style>
