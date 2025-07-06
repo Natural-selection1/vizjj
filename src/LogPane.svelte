@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import { default as GraphLog, type EnhancedLine, type EnhancedRow } from "./GraphLog.svelte";
+    import GraphLog, { type EnhancedLine, type EnhancedRow } from "./GraphLog.svelte";
     import ListWidget, { type List } from "./controls/ListWidget.svelte";
     import SelectWidget from "./controls/SelectWidget.svelte";
     import { query } from "./ipc.js";
@@ -199,14 +199,15 @@
                 containerHeight={logHeight}
                 containerWidth={logWidth}
                 scrollTop={logScrollTop}
-                rows={graphRows}
-                let:row>
-                {#if row}
-                    <RevisionObject
-                        header={row.revision}
-                        selected={$revisionSelectEvent?.id.commit.hex ==
-                            row.revision.id.commit.hex} />
-                {/if}
+                rows={graphRows}>
+                {#snippet children({ row })}
+                    {#if row}
+                        <RevisionObject
+                            header={row.revision}
+                            selected={$revisionSelectEvent?.id.commit.hex ==
+                                row.revision.id.commit.hex} />
+                    {/if}
+                {/snippet}
             </GraphLog>
         {:else}
             <div>Loading changes...</div>
