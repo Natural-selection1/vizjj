@@ -44,15 +44,17 @@
     suffix={change.path.repo_path}
     conflicted={change.has_conflict}
     label={change.path.relative_path}
-    click={onSelect}
-    let:context
-    let:hint>
-    <Zone {operand} let:target>
-        <div class="layout" class:target>
-            <Icon name={icon} state={context ? null : fileState} />
-            <span>{hint ?? change.path.relative_path}</span>
-        </div>
-    </Zone>
+    click={onSelect}>
+    {#snippet children({ context, hint })}
+        <Zone {operand}>
+            {#snippet children({ target })}
+                <div class="layout" class:target>
+                    <Icon name={icon} state={context ? null : fileState} />
+                    <span>{hint ?? change.path.relative_path}</span>
+                </div>
+            {/snippet}
+        </Zone>
+    {/snippet}
 </Object>
 
 <style>

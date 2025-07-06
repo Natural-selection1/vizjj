@@ -9,10 +9,6 @@ Core component for direct-manipulation objects. A drag&drop source.
     import { currentContext, currentSource } from "../stores";
     import BinaryMutator from "../mutators/BinaryMutator";
 
-    interface $$Slots {
-        default: { context: boolean; hint: string | null };
-    }
-
     interface Props {
         suffix?: string | null;
         label: string;
@@ -91,7 +87,7 @@ Core component for direct-manipulation objects. A drag&drop source.
     oncontextmenu={onMenu}
     ondragstart={onDragStart}
     ondragend={onDragEnd}>
-    <slot context={dragging || $currentContext == operand} hint={dragHint} />
+    {@render children?.({ context: dragging || $currentContext == operand, hint: dragHint })}
 </button>
 
 <style>
