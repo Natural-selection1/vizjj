@@ -8,10 +8,6 @@ A drop target for direct-manipulation objects.
     import BinaryMutator from "../mutators/BinaryMutator";
     import { currentSource, currentTarget } from "../stores";
 
-    interface $$Slots {
-        default: { target: boolean; hint: string | null };
-    }
-
     interface Props {
         operand: Operand;
         alwaysTarget?: boolean;
@@ -56,12 +52,10 @@ A drop target for direct-manipulation objects.
 
     function onDrop(event: DragEvent) {
         event.stopPropagation();
-
         let mutator = new BinaryMutator($currentSource!, operand);
         if (mutator.canDrop().type == "yes") {
             mutator.doDrop();
         }
-
         $currentSource = null;
         $currentTarget = null;
         dropHint = null;
@@ -76,7 +70,7 @@ A drop target for direct-manipulation objects.
     ondragover={onDragOver}
     ondragleave={onDragLeave}
     ondrop={onDrop}>
-    <slot {target} hint={dropHint} />
+    {@render children?.({ target, hint: dropHint })}
 </div>
 
 <style>
