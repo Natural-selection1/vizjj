@@ -14,9 +14,9 @@
 <ModalDialog {title} error={severe} cancel={onClose}>
     {@render children?.()}
 
-    <svelte:fragment slot="commands">
+    {#snippet commands()}
         {#if onClose}
             <ActionWidget tip="close dialog" safe onClick={onClose}>OK</ActionWidget>
         {/if}
-    </svelte:fragment>
+    {/snippet}
 </ModalDialog>
