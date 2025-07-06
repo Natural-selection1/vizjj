@@ -161,25 +161,41 @@
 
             <div class="separator"></div>
 
-            <BoundQuery query={selection} let:data>
-                {#if data.type == "Detail"}
-                    <RevisionPane rev={data} />
-                {:else}
+            <BoundQuery query={selection}>
+                {#snippet children({ data })}
+                    {#if data.type == "Detail"}
+                        <RevisionPane rev={data} />
+                    {:else}
+                        <Pane>
+                            {#snippet header()}
+                                <h2>Not Found</h2>
+                            {/snippet}
+                            {#snippet body()}
+                                <p>
+                                    Revision <IdSpan id={data.id.change} />
+                                    |<IdSpan id={data.id.commit} /> does not exist.
+                                </p>
+                            {/snippet}
+                        </Pane>
+                    {/if}
+                {/snippet}
+                {#snippet error({ message })}
                     <Pane>
-                        <h2 slot="header">Not Found</h2>
-                        <p slot="body">
-                            Revision <IdSpan id={data.id.change} />|<IdSpan id={data.id.commit} /> does
-                            not exist.
-                        </p>
+                        {#snippet header()}
+                            <h2>Error</h2>
+                        {/snippet}
+                        {#snippet body()}
+                            <p>{message}</p>
+                        {/snippet}
                     </Pane>
-                {/if}
-                <Pane slot="error" let:message>
-                    <h2 slot="header">Error</h2>
-                    <p slot="body">{message}</p>
-                </Pane>
-                <Pane slot="wait">
-                    <h2 slot="header">Loading...</h2>
-                </Pane>
+                {/snippet}
+                {#snippet wait()}
+                    <Pane>
+                        {#snippet header()}
+                            <h2>Loading...</h2>
+                        {/snippet}
+                    </Pane>
+                {/snippet}
             </BoundQuery>
         {:else if $repoConfigEvent.type == "LoadError"}
             <ModalOverlay>
