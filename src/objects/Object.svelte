@@ -7,16 +7,10 @@ Core component for direct-manipulation objects. A drag&drop source.
     import type { Operand } from "../messages/Operand";
     import { trigger } from "../ipc";
     import { currentContext, currentSource } from "../stores";
-    import { createEventDispatcher } from "svelte";
     import BinaryMutator from "../mutators/BinaryMutator";
 
     interface $$Slots {
         default: { context: boolean; hint: string | null };
-    }
-
-    interface $$Events {
-        click: CustomEvent<MouseEvent>;
-        dblclick: CustomEvent<MouseEvent>;
     }
 
     interface Props {
@@ -25,29 +19,29 @@ Core component for direct-manipulation objects. A drag&drop source.
         selected?: boolean;
         conflicted: boolean;
         operand: Operand;
+        click?: () => void;
+        dblclick?: () => void;
         children?: import("svelte").Snippet<[any]>;
     }
-    let { suffix = null, label, selected = false, conflicted, operand, children }: Props = $props();
-
-    let dispatch = createEventDispatcher();
+    let {
+        suffix = null,
+        label,
+        selected = false,
+        conflicted,
+        operand,
+        click,
+        dblclick,
+        children,
+    }: Props = $props();
 
     let id = suffix == null ? null : `${operand.type}-${suffix}`;
     let dragging: boolean = $state(false);
     let dragHint: string | null = $state(null);
 
-    function onClick(event: MouseEvent) {
-        dispatch("click", event);
-    }
-
-    function onDoubleClick(event: MouseEvent) {
-        dispatch("dblclick", event);
-    }
-
     function onMenu(event: Event) {
         if (operand.type == "Ref" || operand.type == "Change" || operand.type == "Revision") {
             event.preventDefault();
             event.stopPropagation();
-
             currentContext.set(operand);
             trigger("forward_context_menu", { context: operand });
         }
@@ -56,16 +50,16 @@ Core component for direct-manipulation objects. A drag&drop source.
     function onDragStart(event: DragEvent) {
         currentContext.set(null);
         event.stopPropagation();
-
         let canDrag = BinaryMutator.canDrag(operand);
-
         if (canDrag.type == "no") {
             return;
         } else {
-            event.dataTransfer?.setData("text/plain", ""); // if we need more than one drag to be active, this could store a key
-            $currentSource = operand; // it would've been nice to just put this in the drag data but chrome says That's Insecure
+            // if we need more than one drag to be active, this could store a key
+            event.dataTransfer?.setData("text/plain", "");
+            // it would've been nice to just put this in the drag data
+            // but chrome says That's Insecure
+            $currentSource = operand;
             dragging = true;
-
             if (canDrag.type == "maybe") {
                 dragHint = canDrag.hint;
                 let empty = document.createElement("div");
@@ -92,8 +86,8 @@ Core component for direct-manipulation objects. A drag&drop source.
     role="option"
     aria-label={label}
     aria-selected={selected}
-    onclick={onClick}
-    ondblclick={onDoubleClick}
+    onclick={click}
+    ondblclick={dblclick}
     oncontextmenu={onMenu}
     ondragstart={onDragStart}
     ondragend={onDragEnd}>

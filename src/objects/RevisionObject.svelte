@@ -14,7 +14,8 @@
     interface Props {
         header: RevHeader;
         child?: RevHeader | null;
-        selected: boolean; // same as the imported event, but parent may want to force a value
+        // same as the imported event, but parent may want to force a value
+        selected: boolean;
         noBranches?: boolean;
     }
     let { header, child = null, selected, noBranches = false }: Props = $props();
@@ -24,7 +25,6 @@
     function onSelect() {
         revisionSelectEvent.set(header);
     }
-
     function onEdit() {
         new RevisionMutator(header).onEdit();
     }
@@ -36,8 +36,8 @@
     conflicted={header.has_conflict}
     {selected}
     label={header.description.lines[0]}
-    on:click={onSelect}
-    on:dblclick={onEdit}
+    click={onSelect}
+    dblclick={onEdit}
     let:context
     let:hint={dragHint}>
     {#if child}
