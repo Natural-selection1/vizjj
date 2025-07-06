@@ -76,11 +76,15 @@
     });
 </script>
 
-<Object {operand} {label} conflicted={ref.has_conflict} let:context let:hint={dragHint}>
-    <Zone {operand} let:target let:hint={dropHint}>
-        <Chip {context} {target} {disconnected} {tip}>
-            <Icon name="bookmark" state={context ? null : branchState} />
-            <span>{dragHint ?? dropHint ?? label}</span>
-        </Chip>
-    </Zone>
+<Object {operand} {label} conflicted={ref.has_conflict}>
+    {#snippet children({ context, hint: dragHint })}
+        <Zone {operand}>
+            {#snippet children({ target, hint: dropHint })}
+                <Chip {context} {target} {disconnected} {tip}>
+                    <Icon name="bookmark" state={context ? null : branchState} />
+                    <span>{dragHint ?? dropHint ?? label}</span>
+                </Chip>
+            {/snippet}
+        </Zone>
+    {/snippet}
 </Object>

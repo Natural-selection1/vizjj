@@ -31,11 +31,11 @@
     <h3 id="dialog-header" class:error>{title}</h3>
 
     <div id="dialog-content">
-        <slot />
+        {@render children?.()}
     </div>
 
     <div id="dialog-commands">
-        <slot name="commands" />
+        {@render commands?.()}
     </div>
 </div>
 

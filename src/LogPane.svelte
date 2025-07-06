@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import { default as GraphLog, type EnhancedLine, type EnhancedRow } from "./GraphLog.svelte";
+    import GraphLog, { type EnhancedLine, type EnhancedRow } from "./GraphLog.svelte";
     import ListWidget, { type List } from "./controls/ListWidget.svelte";
     import SelectWidget from "./controls/SelectWidget.svelte";
     import { query } from "./ipc.js";
@@ -179,39 +179,45 @@
 </script>
 
 <Pane>
-    <div slot="header" class="log-selector">
-        <SelectWidget options={choices} bind:value={entered_query} change={reloadLog}>
-            <svelte:fragment let:option>{option.label}</svelte:fragment>
-        </SelectWidget>
-        <input class="input" type="text" bind:value={entered_query} onchange={reloadLog} />
-    </div>
+    {#snippet header()}
+        <div class="log-selector">
+            <SelectWidget options={choices} bind:value={entered_query} change={reloadLog}>
+                {#snippet children({ option })}
+                    {option.label}
+                {/snippet}
+            </SelectWidget>
+            <input class="input" type="text" bind:value={entered_query} onchange={reloadLog} />
+        </div>
+    {/snippet}
 
-    <ListWidget
-        slot="body"
-        type="Revision"
-        descendant={$revisionSelectEvent?.id.commit.prefix}
-        {list}
-        bind:clientHeight={logHeight}
-        bind:clientWidth={logWidth}
-        bind:scrollTop={logScrollTop}>
-        {#if graphRows}
-            <GraphLog
-                containerHeight={logHeight}
-                containerWidth={logWidth}
-                scrollTop={logScrollTop}
-                rows={graphRows}
-                let:row>
-                {#if row}
-                    <RevisionObject
-                        header={row.revision}
-                        selected={$revisionSelectEvent?.id.commit.hex ==
-                            row.revision.id.commit.hex} />
-                {/if}
-            </GraphLog>
-        {:else}
-            <div>Loading changes...</div>
-        {/if}
-    </ListWidget>
+    {#snippet body()}
+        <ListWidget
+            type="Revision"
+            descendant={$revisionSelectEvent?.id.commit.prefix}
+            {list}
+            bind:clientHeight={logHeight}
+            bind:clientWidth={logWidth}
+            bind:scrollTop={logScrollTop}>
+            {#if graphRows}
+                <GraphLog
+                    containerHeight={logHeight}
+                    containerWidth={logWidth}
+                    scrollTop={logScrollTop}
+                    rows={graphRows}>
+                    {#snippet children({ row })}
+                        {#if row}
+                            <RevisionObject
+                                header={row.revision}
+                                selected={$revisionSelectEvent?.id.commit.hex ==
+                                    row.revision.id.commit.hex} />
+                        {/if}
+                    {/snippet}
+                </GraphLog>
+            {:else}
+                <div>Loading changes...</div>
+            {/if}
+        </ListWidget>
+    {/snippet}
 </Pane>
 
 <style>

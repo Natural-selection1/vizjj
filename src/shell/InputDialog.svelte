@@ -58,10 +58,10 @@
             <input id="field-{field.label}" type="text" autoCapitalize="off" autoCorrect="off" />
         {/if}
     {/each}
-    <svelte:fragment slot="commands">
+    {#snippet commands()}
         <ActionWidget safe onClick={onEnter}>Enter</ActionWidget>
         <ActionWidget safe onClick={onCancel}>Cancel</ActionWidget>
-    </svelte:fragment>
+    {/snippet}
 </ModalDialog>
 
 <style>

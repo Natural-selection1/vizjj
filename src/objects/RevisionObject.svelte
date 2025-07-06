@@ -37,69 +37,32 @@
     {selected}
     label={header.description.lines[0]}
     click={onSelect}
-    dblclick={onEdit}
-    let:context
-    let:hint={dragHint}>
-    {#if child}
-        <!-- Parents aren't a drop target -->
-        <div class="layout">
-            <IdSpan
-                id={header.id.change}
-                pronoun={context ||
-                    ($currentTarget?.type == "Merge" &&
-                        $currentTarget.header.parent_ids.findIndex(
-                            (id) => id.hex == header.id.commit.hex
-                        ) != -1)} />
-
-            <span
-                class="text desc truncate"
-                class:indescribable={!context && header.description.lines[0] == ""}>
-                {#if header.description.lines[0] == ""}
-                    {dragHint ?? "(no description set)"}
-                {:else}
-                    <EmojiText text={dragHint ?? header.description.lines[0]} />
-                {/if}
-            </span>
-
-            <span class="email"><AuthorSpan author={header.author} /></span>
-
-            <span class="refs">
-                {#each header.refs as ref}
-                    {#if ref.type != "Tag"}
-                        {#if !noBranches && (ref.type == "LocalBookmark" || !ref.is_synced || !ref.is_tracked)}
-                            <div>
-                                <BranchObject {header} {ref} />
-                            </div>
-                        {/if}
-                    {:else}
-                        <div>
-                            <TagObject {header} {ref} />
-                        </div>
-                    {/if}
-                {/each}
-            </span>
-        </div>
-    {:else}
-        <Zone {operand} let:target let:hint={dropHint}>
-            <div class="layout" class:target>
-                <IdSpan id={header.id.change} pronoun={context || target || dropHint != null} />
-
+    dblclick={onEdit}>
+    {#snippet children({ context, hint: dragHint })}
+        {#if child}
+            <!-- Parents aren't a drop target -->
+            <div class="layout">
+                <IdSpan
+                    id={header.id.change}
+                    pronoun={context ||
+                        ($currentTarget?.type == "Merge" &&
+                            $currentTarget.header.parent_ids.findIndex(
+                                (id) => id.hex == header.id.commit.hex
+                            ) != -1)} />
                 <span
                     class="text desc truncate"
                     class:indescribable={!context && header.description.lines[0] == ""}>
                     {#if header.description.lines[0] == ""}
-                        {dragHint ?? dropHint ?? "(no description set)"}
+                        {dragHint ?? "(no description set)"}
                     {:else}
-                        <EmojiText text={dragHint ?? dropHint ?? header.description.lines[0]} />
+                        <EmojiText text={dragHint ?? header.description.lines[0]} />
                     {/if}
                 </span>
-
                 <span class="email"><AuthorSpan author={header.author} /></span>
-
                 <span class="refs">
                     {#each header.refs as ref}
                         {#if ref.type != "Tag"}
-                            {#if ref.type == "LocalBookmark" || !ref.is_synced || !ref.is_tracked}
+                            {#if !noBranches && (ref.type == "LocalBookmark" || !ref.is_synced || !ref.is_tracked)}
                                 <div>
                                     <BranchObject {header} {ref} />
                                 </div>
@@ -112,8 +75,44 @@
                     {/each}
                 </span>
             </div>
-        </Zone>
-    {/if}
+        {:else}
+            <Zone {operand}>
+                {#snippet children({ target, hint: dropHint })}
+                    <div class="layout" class:target>
+                        <IdSpan
+                            id={header.id.change}
+                            pronoun={context || target || dropHint != null} />
+                        <span
+                            class="text desc truncate"
+                            class:indescribable={!context && header.description.lines[0] == ""}>
+                            {#if header.description.lines[0] == ""}
+                                {dragHint ?? dropHint ?? "(no description set)"}
+                            {:else}
+                                <EmojiText
+                                    text={dragHint ?? dropHint ?? header.description.lines[0]} />
+                            {/if}
+                        </span>
+                        <span class="email"><AuthorSpan author={header.author} /></span>
+                        <span class="refs">
+                            {#each header.refs as ref}
+                                {#if ref.type != "Tag"}
+                                    {#if ref.type == "LocalBookmark" || !ref.is_synced || !ref.is_tracked}
+                                        <div>
+                                            <BranchObject {header} {ref} />
+                                        </div>
+                                    {/if}
+                                {:else}
+                                    <div>
+                                        <TagObject {header} {ref} />
+                                    </div>
+                                {/if}
+                            {/each}
+                        </span>
+                    </div>
+                {/snippet}
+            </Zone>
+        {/if}
+    {/snippet}
 </Object>
 
 <style>

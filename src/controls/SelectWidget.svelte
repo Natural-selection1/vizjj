@@ -1,10 +1,6 @@
 <script lang="ts" generics="T extends {value: string}">
     import Icon from "./Icon.svelte";
 
-    interface $$Slots {
-        default: { option: T };
-    }
-
     interface Props {
         id?: string | null;
         options: T[];
@@ -19,7 +15,11 @@
     <select class="select" {id} bind:value onchange={change}>
         {#each options as option}
             <option selected={value == option.value} value={option.value}>
-                <slot {option}>{option.value}</slot>
+                {#if children}
+                    {@render children({ option })}
+                {:else}
+                    {option.value}
+                {/if}
             </option>
         {/each}
     </select>

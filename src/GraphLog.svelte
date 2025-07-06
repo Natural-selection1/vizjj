@@ -16,10 +16,6 @@
     import type { LogRow } from "./messages/LogRow.js";
     import type { RevHeader } from "./messages/RevHeader.js";
 
-    interface $$Slots {
-        default: { row: EnhancedRow | null };
-    }
-
     const columnWidth = 18;
     const rowHeight = 30;
     interface Props {
@@ -95,7 +91,7 @@
                     height={rowHeight}
                     width={containerWidth - (row?.location[0] ?? 0) * columnWidth}
                     style="--leftpad: {(row?.padding ?? 0) * columnWidth + columnWidth + 6}px;">
-                    <slot {row} />
+                    {@render children?.({ row })}
                 </foreignObject>
 
                 {#if row}
