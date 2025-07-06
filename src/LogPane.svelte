@@ -153,12 +153,15 @@
                 enhancedLine.key = lineKey++;
 
                 if (line.type == "ToIntersection" || line.type == "ToMissing") {
-                    // ToIntersection lines begin at their owning row, so they run from this row to the next one that we read (which may not be on the same page)
+                    // ToIntersection lines begin at their owning row,
+                    // so they run from this row to the next one that we read
+                    // (which may not be on the same page)
                     enhancedLine.child = row.revision;
                     enhancedRow.passingLines.push(enhancedLine);
                     passNextRow.push(enhancedLine);
                 } else {
-                    // other lines end at their owning row, so we need to add them to all previous rows and then this one
+                    // other lines end at their owning row,
+                    // so we need to add them to all previous rows and then this one
                     enhancedLine.parent = row.revision;
                     enhancedLine.child = graph[line.source[1]].revision;
                     for (let i = line.source[1]; i < line.target[1]; i++) {
@@ -177,7 +180,7 @@
 
 <Pane>
     <div slot="header" class="log-selector">
-        <SelectWidget options={choices} bind:value={entered_query} on:change={reloadLog}>
+        <SelectWidget options={choices} bind:value={entered_query} change={reloadLog}>
             <svelte:fragment let:option>{option.label}</svelte:fragment>
         </SelectWidget>
         <input class="input" type="text" bind:value={entered_query} onchange={reloadLog} />

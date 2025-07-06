@@ -44,7 +44,7 @@
     suffix={change.path.repo_path}
     conflicted={change.has_conflict}
     label={change.path.relative_path}
-    on:click={onSelect}
+    click={onSelect}
     let:context
     let:hint>
     <Zone {operand} let:target>
