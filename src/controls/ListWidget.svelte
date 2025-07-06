@@ -11,10 +11,6 @@
     import { onMount } from "svelte";
     import type { Operand } from "../messages/Operand";
 
-    interface $$Slots {
-        default: {};
-    }
-
     interface Props {
         list: List;
         type: Operand["type"];
