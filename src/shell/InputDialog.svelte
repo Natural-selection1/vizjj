@@ -50,7 +50,7 @@
     }
 </script>
 
-<ModalDialog {title} on:cancel={onCancel} on:default={onEnter}>
+<ModalDialog {title} cancel={onCancel} default={onEnter}>
     {#if detail != ""}
         <p>{detail}</p>
     {/if}

@@ -1,24 +1,17 @@
 <script lang="ts">
     import ActionWidget from "../controls/ActionWidget.svelte";
-    import Icon from "../controls/Icon.svelte";
     import ModalDialog from "./ModalDialog.svelte";
 
     interface Props {
         title: string;
         severe?: boolean;
-        onClose?: (() => void) | null;
+        onClose?: () => void;
         children?: import("svelte").Snippet;
     }
-    let { title, severe = false, onClose = null, children }: Props = $props();
-
-    function handleCancel() {
-        if (onClose) {
-            onClose();
-        }
-    }
+    let { title, severe = false, onClose, children }: Props = $props();
 </script>
 
-<ModalDialog {title} error={severe} on:cancel={handleCancel}>
+<ModalDialog {title} error={severe} cancel={onClose}>
     {@render children?.()}
 
     <svelte:fragment slot="commands">

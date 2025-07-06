@@ -1,19 +1,15 @@
 <script lang="ts">
-    import { createEventDispatcher, onMount } from "svelte";
-
-    interface $$Events {
-        cancel: CustomEvent<void>;
-        default: CustomEvent<void>;
-    }
+    import { onMount } from "svelte";
 
     interface Props {
         title: string;
         error?: boolean;
+        cancel?: () => void;
+        default?: () => void;
         children?: import("svelte").Snippet;
         commands?: import("svelte").Snippet;
     }
-    let { title, error = false, children, commands }: Props = $props();
-    let dispatch = createEventDispatcher();
+    let { title, error = false, cancel, default: defaultAction, children, commands }: Props = $props();
 
     onMount(() => {
         document.addEventListener("keydown", onKeyDown);
@@ -24,9 +20,9 @@
 
     function onKeyDown(event: KeyboardEvent) {
         if (event.key == "Escape") {
-            dispatch("cancel");
+            cancel?.();
         } else if (event.key == "Enter") {
-            dispatch("default");
+            defaultAction?.();
         }
     }
 </script>
