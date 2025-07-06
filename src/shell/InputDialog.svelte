@@ -1,33 +1,25 @@
 <script lang="ts">
-    import { createEventDispatcher, onMount } from "svelte";
+    import { onMount } from "svelte";
     import ActionWidget from "../controls/ActionWidget.svelte";
     import SelectWidget from "../controls/SelectWidget.svelte";
     import type { InputField } from "../messages/InputField";
     import type { InputResponse } from "../messages/InputResponse";
     import ModalDialog from "./ModalDialog.svelte";
 
-    interface $$Events {
-        response: CustomEvent<InputResponse>;
-    }
-
     interface Props {
         title: string;
         detail: String;
         fields: InputField[];
+        response?: (response: InputResponse) => void;
     }
-    let { title, detail, fields }: Props = $props();
-
-    let dispatch = createEventDispatcher();
+    let { title, detail, fields, response }: Props = $props();
 
     onMount(() => {
         document.getElementById(`field-${fields[0].label}`)?.focus();
     });
 
     function onCancel() {
-        dispatch("response", {
-            cancel: true,
-            fields: {},
-        });
+        response?.({ cancel: true, fields: {} });
     }
 
     function onEnter() {
@@ -43,10 +35,7 @@
             }
         }
 
-        dispatch("response", {
-            cancel: false,
-            fields: responseFields,
-        });
+        response?.({ cancel: false, fields: responseFields });
     }
 </script>
 

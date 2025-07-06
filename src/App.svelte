@@ -92,7 +92,6 @@
 
     async function loadChange(id: RevId) {
         let rev = await query<RevResult>("query_revision", { id }, (q) => (selection = q));
-
         if (
             rev.type == "data" &&
             rev.value.type == "NotFound" &&
@@ -151,9 +150,7 @@
             <Pane>
                 <h2 slot="header">Loading...</h2>
             </Pane>
-
             <div class="separator"></div>
-
             <Pane />
         {:else if $repoConfigEvent.type == "Workspace"}
             {#key $repoConfigEvent.absolute_path}
@@ -220,7 +217,7 @@
                     title={$currentInput.title}
                     detail={$currentInput.detail}
                     fields={$currentInput.fields}
-                    on:response={(event) => $currentInput?.callback(event.detail)} />
+                    response={(event) => $currentInput?.callback(event)} />
             </ModalOverlay>
         {:else if $currentMutation}
             <ModalOverlay>
