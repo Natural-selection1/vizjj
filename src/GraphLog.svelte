@@ -1,10 +1,12 @@
-<!-- Renders commit rows with an SVG graph drawn over them, virtualising the ui to allow for long graphs -->
+<!--
+@component
+Renders commit rows with an SVG graph drawn over them,
+virtualising the ui to allow for long graphs
+-->
 
 <script module lang="ts">
     import type { LogLine } from "./messages/LogLine.js";
-
     export type EnhancedLine = LogLine & { key: number; parent: RevHeader; child: RevHeader };
-
     export interface EnhancedRow extends LogRow {
         passingLines: Array<EnhancedLine>;
     }
@@ -16,8 +18,6 @@
     import type { LogRow } from "./messages/LogRow.js";
     import type { RevHeader } from "./messages/RevHeader.js";
 
-    const columnWidth = 18;
-    const rowHeight = 30;
     interface Props {
         containerHeight: number;
         containerWidth: number;
@@ -27,31 +27,17 @@
     }
     let { containerHeight, containerWidth, scrollTop, rows, children }: Props = $props();
 
+    const columnWidth = 18;
+    const rowHeight = 30;
     let graphHeight = $derived(Math.max(containerHeight, rows.length * rowHeight));
-    let visibleRows = $derived(Math.ceil(containerHeight / rowHeight) + 1);
-    let startIndex = $derived(Math.floor(Math.max(scrollTop, 0) / rowHeight));
-    let endIndex = $derived(startIndex + visibleRows);
-    let overlap = $derived(startIndex % visibleRows);
-    let visibleSlice = $derived({
-        rows: shiftArray(sliceArray(rows, startIndex, endIndex), overlap),
-        keys: new Set<number>(),
+    let visibleSlice = $derived.by(() => {
+        const start = Math.floor(Math.max(scrollTop, 0) / rowHeight);
+        const end = start + Math.ceil(containerHeight / rowHeight) + 1;
+        return {
+            rows: rows.slice(start, end),
+            keys: new Set<number>(),
+        };
     });
-
-    function sliceArray(arr: (EnhancedRow | null)[], start: number, end: number) {
-        arr = arr.slice(start, end);
-        let expectedLength = end - start;
-        while (arr.length < expectedLength) {
-            arr.push(null); // placeholders when there aren't enough items to fill the container
-        }
-        return arr;
-    }
-
-    function shiftArray(arr: (EnhancedRow | null)[], count: number) {
-        for (let i = 0; i < count; i++) {
-            arr.unshift(arr.pop()!);
-        }
-        return arr;
-    }
 
     function distinctLines(keys: Set<number>, row: EnhancedRow | null): EnhancedLine[] {
         if (row === null) {
