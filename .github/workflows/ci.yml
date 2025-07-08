@@ -22,7 +22,7 @@ jobs:
         run: bun run check
 
       - name: check frontend formatting
-        run: bun run fmt
+        run: bun run fmt:ci
 
   rust-check:
     runs-on: ${{ matrix.os }}
@@ -37,6 +37,10 @@ jobs:
             target: x86_64-apple-darwin
     steps:
       - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "latest"
 
       - uses: awalsh128/cache-apt-pkgs-action@v1
         if: matrix.os == 'ubuntu-latest'
@@ -58,7 +62,7 @@ jobs:
         run: cd src-tauri && cargo fmt --check
 
       - name: check rust linting
-        run: cd src-tauri && cargo clippy -- -D warnings
+        run: bun run clippy:ci
 
       - name: run tests
-        run: cd src-tauri && cargo test
+        run: bun run test

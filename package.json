@@ -13,7 +13,9 @@
     "test": "cd src-tauri && cargo test",
     "fix": "bun run fmt && bun run clippy",
     "fmt": "bun x prettier --write \"**/*.{js,ts,svelte,json,css,md,yml}\" \"!package-lock.json\" \"!src/messages\" \"!src-tauri/gen\" \"!src-tauri/targets\"",
-    "clippy": "cd src-tauri && cargo clippy --fix --all-targets --allow-dirty"
+    "fmt:ci": "bun x prettier --check \"**/*.{js,ts,svelte,json,css,md,yml}\" \"!package-lock.json\" \"!src/messages\" \"!src-tauri/gen\" \"!src-tauri/targets\"",
+    "clippy": "cd src-tauri && cargo clippy --fix --all-targets --allow-dirty",
+    "clippy:ci": "cd src-tauri && cargo clippy -- -D warnings"
   },
   "dependencies": {
     "@catppuccin/palette": "^1.0.3",

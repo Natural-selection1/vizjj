@@ -9,7 +9,14 @@
         children?: import("svelte").Snippet;
         commands?: import("svelte").Snippet;
     }
-    let { title, error = false, cancel, default: defaultAction, children, commands }: Props = $props();
+    let {
+        title,
+        error = false,
+        cancel,
+        default: defaultAction,
+        children,
+        commands,
+    }: Props = $props();
 
     onMount(() => {
         document.addEventListener("keydown", onKeyDown);
