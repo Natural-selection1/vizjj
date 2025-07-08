@@ -150,17 +150,4 @@
         outline: 2px solid var(--ctp-lavender);
         border-radius: 3px;
     }
-
-    .listbox::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .listbox::-webkit-scrollbar-thumb {
-        background-color: var(--ctp-text);
-        border-radius: 6px;
-    }
-
-    .listbox::-webkit-scrollbar-track {
-        background-color: var(--ctp-crust);
-    }
 </style>
