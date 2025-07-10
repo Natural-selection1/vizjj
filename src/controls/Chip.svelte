@@ -17,11 +17,13 @@
     }: Props = $props();
 </script>
 
-<div class="chip" class:context class:target class:disconnected class:immobile title={tip}>
+<div class={["chip", context, target, disconnected, immobile]} title={tip}>
     {@render children?.()}
 </div>
 
 <style>
+    @reference "tailwindcss";
+
     .chip {
         pointer-events: auto;
 
@@ -36,7 +38,7 @@
         border: 1px solid var(--ctp-overlay1);
         border-radius: 12px;
         padding: 0 6px;
-        background: var(--ctp-mantle);
+        background: light-dark(var(--color-stone-100), var(--color-stone-200));
         white-space: nowrap;
         gap: 3px;
     }

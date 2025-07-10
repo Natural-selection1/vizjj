@@ -66,7 +66,7 @@ virtualising the ui to allow for long graphs
     }
 </script>
 
-<svg class="graph" style="width: 100%; height: {graphHeight}px;">
+<svg class="graph" style="height: {graphHeight}px;">
     {#each visibleSlice.rows as row}
         {#key row}
             <g
@@ -98,8 +98,7 @@ virtualising the ui to allow for long graphs
 
 <style>
     svg {
-        stroke: var(--ctp-text);
-        fill: var(--ctp-text);
+        width: 100%;
         overflow: hidden;
     }
 

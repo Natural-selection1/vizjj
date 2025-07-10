@@ -31,15 +31,10 @@
     }
 </script>
 
-<!-- prettier-ignore -->
 <span class="author">
     {#if includeTimestamp}
-        <div class="inline" title={author.email}>
-            {author.name}
-        </div>,
-        <div class="inline" title={datetime.toLocaleString()}>
-            {relativeDate()}
-        </div>
+        <div class="inline" title={author.email}>{author.name},</div>
+        <div class="inline" title={datetime.toLocaleString()}>{relativeDate()}</div>
     {:else}
         <div class="inline" title={author.email + ", " + datetime.toLocaleString()}>
             {author.name}
@@ -49,7 +44,7 @@
 
 <style>
     .author {
-        color: var(--ctp-subtext0);
+        opacity: 0.55;
         white-space: nowrap;
     }
 

@@ -91,16 +91,15 @@
     }
 
     function minLines(change: RevChange): number {
-        // let total = 0;
-        // for (let hunk of change.hunks) {
-        //     total += Math.min(hunk.lines.lines.length, CONTEXT * 2 + 1) + 1;
-        // }
-        // return total;
-        let max = 0;
-        for (let hunk of change.hunks) {
-            max = Math.max(hunk.lines.lines.length, max);
+        if (change.hunks.length === 1) {
+            return change.hunks[0].lines.lines.length + 2;
+        } else {
+            let total = 0;
+            for (let hunk of change.hunks) {
+                total += hunk.lines.lines.length + 2;
+            }
+            return Math.floor(total / 2);
         }
-        return Math.min(max, CONTEXT * 2 + 1);
     }
 
     function lineColour(line: string): string | null {
@@ -175,6 +174,7 @@
         <div class="body">
             <textarea
                 class="description"
+                placeholder="(no description set)"
                 spellcheck="false"
                 disabled={rev.header.is_immutable}
                 bind:value={fullDescription}
@@ -271,6 +271,8 @@
 </Pane>
 
 <style>
+    @reference "tailwindcss";
+
     .header {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
@@ -311,6 +313,10 @@
         resize: vertical;
         min-height: 90px;
         overflow: auto;
+        background: light-dark(
+            --alpha(var(--color-stone-400) / 30%),
+            --alpha(var(--color-zinc-600) / 60%)
+        );
     }
 
     .signature-commands {
@@ -339,7 +345,6 @@
     .move-commands {
         border-top: 1px solid var(--ctp-overlay0);
         height: 30px;
-        width: 100%;
         padding: 0 3px;
         display: grid;
         grid-template-columns: 1fr auto auto;
@@ -352,7 +357,7 @@
     }
 
     .no-changes {
-        color: var(--ctp-subtext0);
+        opacity: 0.5;
     }
 
     .changes {
@@ -362,39 +367,40 @@
         pointer-events: auto;
         overflow-x: hidden;
         overflow-y: auto;
-        scrollbar-color: var(--ctp-text) var(--ctp-crust);
+        scrollbar-width: thin;
         flex: 1;
         min-height: 0;
     }
 
     .change {
-        font-size: small;
         margin: 0;
         pointer-events: auto;
         overflow-x: auto;
         overflow-y: scroll;
-        scrollbar-color: var(--ctp-text) var(--ctp-base);
+        scrollbar-width: thin;
         min-height: calc(var(--lines) * 1em);
     }
 
     .hunk {
         margin: 0;
         text-align: center;
-        background: var(--ctp-mantle);
     }
 
     .diff {
         margin: 0;
-        background: var(--ctp-base);
         user-select: text;
+        background: light-dark(
+            --alpha(var(--color-stone-400) / 20%),
+            --alpha(var(--color-zinc-600) / 30%)
+        );
     }
 
     .add {
-        color: var(--ctp-green);
+        color: light-dark(var(--color-emerald-700), var(--color-green-400));
     }
 
     .remove {
-        color: var(--ctp-red);
+        color: light-dark(var(--color-red-600), var(--color-red-400));
     }
 
     .target {

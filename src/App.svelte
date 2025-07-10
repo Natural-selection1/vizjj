@@ -28,6 +28,7 @@
         repoConfigEvent,
         repoStatusEvent,
         revisionSelectEvent,
+        initTheme,
     } from "./stores.js";
 
     let selection: Query<RevResult> = $state({ type: "wait" });
@@ -47,7 +48,9 @@
     // vizjj://repo/config event in response to this one. if it takes too long, we make our own
     trigger("notify_window_ready");
     let loadTimeout: number | null;
+
     onMount(() => {
+        initTheme();
         if ($repoConfigEvent.type == "Initial") {
             loadTimeout = setTimeout(() => {
                 repoConfigEvent.set({ type: "TimeoutError" });
@@ -144,9 +147,7 @@
 
 <Zone operand={{ type: "Repository" }} alwaysTarget>
     {#snippet children({ target })}
-        <div
-            id="shell"
-            class={$repoConfigEvent?.type == "Workspace" ? $repoConfigEvent.theme_override : ""}>
+        <div id="shell">
             {#if $repoConfigEvent.type == "Initial"}
                 <Pane>
                     {#snippet header()}
@@ -270,25 +271,23 @@
 </Zone>
 
 <style>
+    @reference "tailwindcss";
+
     #shell {
         width: 100vw;
         height: 100vh;
-
         display: grid;
+        user-select: none;
+
         grid-template-columns: 1fr 3px 1fr;
         grid-template-rows: 1fr 3px 30px;
         grid-template-areas:
             "content content content"
             ". . ."
             "footer footer footer";
-
-        background: var(--ctp-crust);
-        color: var(--ctp-text);
-
-        user-select: none;
     }
 
     .separator {
-        background: var(--ctp-overlay0);
+        background: light-dark(var(--color-surface-300), var(--color-surface-700));
     }
 </style>

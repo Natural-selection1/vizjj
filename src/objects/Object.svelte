@@ -91,42 +91,41 @@ Core component for direct-manipulation objects. A drag&drop source.
 </button>
 
 <style>
+    @reference "tailwindcss";
+
     button {
         /* reset button styles */
-        background: transparent;
-        border: none;
-        margin: 0;
-        padding: 0;
-        color: inherit;
         text-align: left;
-
-        cursor: pointer;
         width: 100%;
         display: flex;
-        align-items: center;
+
+        &:hover {
+            background: light-dark(var(--color-neutral-200), var(--color-neutral-700));
+        }
     }
 
     .selected {
-        background: var(--ctp-base);
+        background: light-dark(var(--color-neutral-200), var(--color-neutral-700));
     }
 
     .conflict {
-        background: repeating-linear-gradient(
-            120deg,
-            transparent 0px,
-            transparent 12px,
-            var(--ctp-surface0) 12px,
-            var(--ctp-surface0) 15px
+        background: light-dark(
+            --alpha(var(--color-error-300) / 70%),
+            --alpha(var(--color-error-700) / 40%)
         );
+
+        &:hover {
+            background: light-dark(
+                --alpha(var(--color-error-300) / 35%),
+                --alpha(var(--color-error-700) / 20%)
+            );
+        }
     }
 
     .selected.conflict {
-        background: repeating-linear-gradient(
-            120deg,
-            var(--ctp-surface0) 0px,
-            var(--ctp-surface0) 12px,
-            var(--ctp-base) 12px,
-            var(--ctp-base) 15px
+        background: light-dark(
+            --alpha(var(--color-error-300) / 35%),
+            --alpha(var(--color-error-700) / 20%)
         );
     }
 

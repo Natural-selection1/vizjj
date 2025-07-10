@@ -26,6 +26,8 @@
 {/if}
 
 <style>
+    @reference "tailwindcss";
+
     .recent-workspaces {
         margin-top: 16px;
     }
@@ -38,25 +40,15 @@
 
     .workspace-item {
         margin: 10px 0;
-        font-family: monospace;
-        font-size: 12px;
-        color: var(--ctp-subtext1);
     }
 
     .workspace-button {
-        background: none;
-        border: none;
-        color: var(--ctp-blue);
-        cursor: pointer;
-        text-decoration: none;
-        font-family: monospace;
+        color: light-dark(var(--color-cyan-700), var(--color-cyan-500));
         font-size: 18px;
-        padding: 0;
-        text-align: left;
-    }
 
-    .workspace-button:hover {
-        color: var(--ctp-sky);
-        text-decoration: underline;
+        &:hover {
+            color: var(--color-emerald-600);
+            text-decoration: underline;
+        }
     }
 </style>
