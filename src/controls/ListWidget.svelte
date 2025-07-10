@@ -42,7 +42,6 @@
         if (box && box.scrollTop !== scrollTop) {
             scrollTop = box.scrollTop;
         }
-
         pollFrame = requestAnimationFrame(pollScroll);
     }
 
@@ -103,9 +102,7 @@
 
     function onSelect(index: number) {
         box.focus();
-
         list.selectRow(index);
-
         let y = index * 30;
         if (box.scrollTop + box.clientHeight < y + 30) {
             box.scrollTo({
@@ -138,16 +135,20 @@
 </ol>
 
 <style>
+    @reference "tailwindcss";
+
     .listbox {
-        overflow-x: hidden;
-        overflow-y: auto;
-        scrollbar-color: var(--ctp-text) var(--ctp-crust);
         display: grid;
         outline: none;
-    }
 
-    .listbox:focus-visible {
-        outline: 2px solid var(--ctp-lavender);
-        border-radius: 3px;
+        overflow-x: hidden;
+        overflow-y: auto;
+        scrollbar-width: thin;
+
+        &:focus-visible {
+            @apply outline-violet-500;
+            outline: 2px solid;
+            border-radius: 3px;
+        }
     }
 </style>

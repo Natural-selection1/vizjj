@@ -145,7 +145,7 @@
     }
 
     .desc.indescribable {
-        color: var(--ctp-subtext0);
+        opacity: 0.5;
     }
 
     .email {

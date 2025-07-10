@@ -93,9 +93,11 @@
     class:target={$currentTarget == operand} />
 
 <style>
+    @reference "tailwindcss";
+
     path {
         pointer-events: none;
-        stroke: var(--ctp-blue);
+        @apply stroke-sky-500;
     }
 
     foreignObject > :global(*) {
@@ -108,7 +110,6 @@
     }
 
     .target {
-        stroke: black;
-        background-color: var(--ctp-flamingo);
+        @apply stroke-black bg-rose-400;
     }
 </style>

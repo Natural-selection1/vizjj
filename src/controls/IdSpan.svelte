@@ -15,18 +15,24 @@
 </span>
 
 <style>
+    @reference "tailwindcss";
+
     .id {
         pointer-events: none;
-        color: var(--ctp-subtext1);
-        font-family: var(--stack-code);
+        color: light-dark(
+            --alpha(var(--color-stone-700) / 60%),
+            --alpha(var(--color-stone-300) / 60%)
+        );
     }
 
     .ChangeId {
-        color: var(--ctp-pink);
+        font-size: 18px;
+        color: light-dark(var(--color-rose-500), var(--color-rose-400));
     }
 
     .CommitId {
-        color: var(--ctp-mauve);
+        font-size: 18px;
+        color: light-dark(var(--color-teal-500), var(--color-teal-400));
     }
 
     .pronoun {

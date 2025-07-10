@@ -174,7 +174,7 @@
     {#snippet body()}
         <div class="body">
             <textarea
-                class="description"
+                class="description bg-slate-300/70 dark:bg-zinc-600/60"
                 spellcheck="false"
                 disabled={rev.header.is_immutable}
                 bind:value={fullDescription}
@@ -252,7 +252,8 @@
                                             +{hunk.location.to_file.start},
                                             {hunk.location.to_file.len} @@
                                         </div>
-                                        <pre class="diff">{#each hunk.lines.lines as line}<span
+                                        <pre
+                                            class="diff bg-stone-400/20 dark:bg-zinc-600/30">{#each hunk.lines.lines as line}<span
                                                     class={lineColour(line)}>{line}</span
                                                 >{/each}</pre>
                                     {/each}
@@ -271,6 +272,8 @@
 </Pane>
 
 <style>
+    @reference "tailwindcss";
+
     .header {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
@@ -339,7 +342,6 @@
     .move-commands {
         border-top: 1px solid var(--ctp-overlay0);
         height: 30px;
-        width: 100%;
         padding: 0 3px;
         display: grid;
         grid-template-columns: 1fr auto auto;
@@ -352,7 +354,7 @@
     }
 
     .no-changes {
-        color: var(--ctp-subtext0);
+        opacity: 0.5;
     }
 
     .changes {
@@ -362,7 +364,7 @@
         pointer-events: auto;
         overflow-x: hidden;
         overflow-y: auto;
-        scrollbar-color: var(--ctp-text) var(--ctp-crust);
+        scrollbar-width: thin;
         flex: 1;
         min-height: 0;
     }
@@ -373,28 +375,26 @@
         pointer-events: auto;
         overflow-x: auto;
         overflow-y: scroll;
-        scrollbar-color: var(--ctp-text) var(--ctp-base);
+        scrollbar-width: thin;
         min-height: calc(var(--lines) * 1em);
     }
 
     .hunk {
         margin: 0;
         text-align: center;
-        background: var(--ctp-mantle);
     }
 
     .diff {
         margin: 0;
-        background: var(--ctp-base);
         user-select: text;
     }
 
     .add {
-        color: var(--ctp-green);
+        color: light-dark(var(--color-emerald-700), var(--color-green-400));
     }
 
     .remove {
-        color: var(--ctp-red);
+        color: light-dark(var(--color-red-600), var(--color-red-400));
     }
 
     .target {

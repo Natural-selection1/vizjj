@@ -28,6 +28,7 @@
         repoConfigEvent,
         repoStatusEvent,
         revisionSelectEvent,
+        initTheme,
     } from "./stores.js";
 
     let selection: Query<RevResult> = $state({ type: "wait" });
@@ -47,7 +48,10 @@
     // vizjj://repo/config event in response to this one. if it takes too long, we make our own
     trigger("notify_window_ready");
     let loadTimeout: number | null;
+
     onMount(() => {
+        initTheme();
+
         if ($repoConfigEvent.type == "Initial") {
             loadTimeout = setTimeout(() => {
                 repoConfigEvent.set({ type: "TimeoutError" });
@@ -144,16 +148,14 @@
 
 <Zone operand={{ type: "Repository" }} alwaysTarget>
     {#snippet children({ target })}
-        <div
-            id="shell"
-            class={$repoConfigEvent?.type == "Workspace" ? $repoConfigEvent.theme_override : ""}>
+        <div id="shell">
             {#if $repoConfigEvent.type == "Initial"}
                 <Pane>
                     {#snippet header()}
                         <h2>Loading...</h2>
                     {/snippet}
                 </Pane>
-                <div class="separator"></div>
+                <div class="separator bg-surface-300-700"></div>
                 <Pane />
             {:else if $repoConfigEvent.type == "Workspace"}
                 {#key $repoConfigEvent.absolute_path}
@@ -162,7 +164,7 @@
                         latest_query={$repoConfigEvent.latest_query} />
                 {/key}
 
-                <div class="separator"></div>
+                <div class="separator bg-surface-300-700"></div>
 
                 <BoundQuery query={selection}>
                     {#snippet children({ data })}
@@ -226,7 +228,7 @@
                 </ModalOverlay>
             {/if}
 
-            <div class="separator" style="grid-area: 2/1/3/4"></div>
+            <div class="separator bg-surface-300-700" style="grid-area: 2/1/3/4"></div>
 
             <StatusBar {target} />
 
@@ -273,22 +275,18 @@
     #shell {
         width: 100vw;
         height: 100vh;
-
         display: grid;
+        user-select: none;
+
         grid-template-columns: 1fr 3px 1fr;
         grid-template-rows: 1fr 3px 30px;
         grid-template-areas:
             "content content content"
             ". . ."
             "footer footer footer";
-
-        background: var(--ctp-crust);
-        color: var(--ctp-text);
-
-        user-select: none;
     }
 
     .separator {
-        background: var(--ctp-overlay0);
+        /*  */
     }
 </style>

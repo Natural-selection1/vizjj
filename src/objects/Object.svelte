@@ -73,6 +73,7 @@ Core component for direct-manipulation objects. A drag&drop source.
 
 <button
     {id}
+    class="hover:bg-neutral-200 dark:hover:bg-neutral-700"
     class:selected
     class:conflict={conflicted}
     class:context={dragging || $currentContext == operand}
@@ -91,23 +92,21 @@ Core component for direct-manipulation objects. A drag&drop source.
 </button>
 
 <style>
+    @reference "tailwindcss";
+
     button {
         /* reset button styles */
-        background: transparent;
-        border: none;
-        margin: 0;
-        padding: 0;
-        color: inherit;
         text-align: left;
-
-        cursor: pointer;
         width: 100%;
         display: flex;
-        align-items: center;
+
+        &:hover {
+            /*  */
+        }
     }
 
     .selected {
-        background: var(--ctp-base);
+        /*  */
     }
 
     .conflict {
