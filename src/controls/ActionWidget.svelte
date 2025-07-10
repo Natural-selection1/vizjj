@@ -27,44 +27,29 @@
 {/if}
 
 <style>
+    @reference "tailwindcss";
+
     button {
+        display: flex;
         height: 24px;
         font-size: 16px;
-
         outline: none;
-        margin: 0;
-        background: var(--ctp-flamingo);
+        background: light-dark(--alpha(var(--color-slate-400) / 50%), var(--color-stone-700));
         border-width: 1px;
         border-radius: 3px;
-        border-color: var(--ctp-overlay0);
-        box-shadow: 2px 2px var(--ctp-overlay0);
-
-        font-family: var(--stack-industrial);
-        display: flex;
+        border-color: light-dark(var(--color-stone-700), --alpha(var(--color-slate-400) / 50%));
+        box-shadow: 2px 2px
+            light-dark(var(--color-stone-700), --alpha(var(--color-slate-400) / 50%));
         align-items: center;
         gap: 3px;
-
         padding: 1px 6px;
-    }
-
-    button :global(.id) {
-        color: var(--ctp-crust) !important;
-    }
-    button :global(.id .ChangeId) {
-        color: rgb(198, 35, 117);
-        font-weight: bold;
-    }
-    button :global(.id .CommitId) {
-        color: rgb(38, 107, 255);
-        font-weight: bold;
     }
 
     button:not(:disabled) {
         &:hover {
-            background: var(--ctp-maroon);
+            background: light-dark(var(--color-stone-400), var(--color-stone-500));
         }
         &:focus-visible {
-            border-color: var(--ctp-lavender);
             border-width: 2px;
             padding: 0px 5px;
             text-decoration: underline;
@@ -72,7 +57,7 @@
         &:active {
             margin: 1px 0px 0px 1px;
             padding: 1px 5px 0px 6px;
-            box-shadow: 1px 1px var(--ctp-overlay0);
+            box-shadow: 1px 1px;
             &:focus-visible {
                 padding: 1px 4px 0px 5px;
             }
@@ -91,7 +76,10 @@
     }
 
     button:disabled {
-        background: var(--ctp-mantle);
-        color: var(--ctp-subtext1);
+        background: --alpha(var(--color-stone-300) / 20%);
+        color: light-dark(
+            --alpha(var(--color-stone-800) / 50%),
+            --alpha(var(--color-stone-200) / 60%)
+        );
     }
 </style>

@@ -8,12 +8,8 @@
 </script>
 
 <section inert={$hasModal}>
-    <div class="header">
-        {@render header?.()}
-    </div>
-    <div class="body">
-        {@render body?.()}
-    </div>
+    <div class="header">{@render header?.()}</div>
+    <div class="body">{@render body?.()}</div>
 </section>
 
 <style>

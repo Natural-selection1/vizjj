@@ -16,6 +16,8 @@
         hasModal,
         repoConfigEvent,
         repoStatusEvent,
+        currentTheme,
+        toggleTheme,
     } from "../stores";
 
     let { target }: { target: boolean } = $props();
@@ -68,6 +70,11 @@
 {#if !dropHint}
     <div id="status-bar" class="repo-bar" inert={$hasModal}>
         <div class="substatus">
+            <ActionWidget
+                tip="change theme to {$currentTheme === 'light' ? 'Dark Mode' : 'Light Mode'}"
+                onClick={toggleTheme}>
+                <Icon name={$currentTheme === "light" ? "moon" : "sun"} />
+            </ActionWidget>
             <span id="status-workspace">
                 {$repoConfigEvent?.type == "Workspace"
                     ? $repoConfigEvent.absolute_path

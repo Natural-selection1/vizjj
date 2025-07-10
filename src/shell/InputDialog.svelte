@@ -65,9 +65,16 @@
 </ModalDialog>
 
 <style>
+    @reference "tailwindcss";
+
     p {
         grid-column: 1/3;
         word-wrap: break-word;
+    }
+
+    input {
+        background: light-dark(--alpha(var(--color-neutral-400) / 50%), var(--color-neutral-700));
+        border: 2px solid light-dark(var(--color-neutral-400), var(--color-neutral-700));
     }
 
     label:first-child {

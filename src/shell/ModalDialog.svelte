@@ -36,21 +36,17 @@
 
 <div id="dialog-chrome" role="dialog" aria-modal="true">
     <h3 id="dialog-header" class:error>{title}</h3>
-
-    <div id="dialog-content">
-        {@render children?.()}
-    </div>
-
-    <div id="dialog-commands">
-        {@render commands?.()}
-    </div>
+    <div id="dialog-content">{@render children?.()}</div>
+    <div id="dialog-commands">{@render commands?.()}</div>
 </div>
 
 <style>
+    @reference "tailwindcss";
+
     #dialog-chrome {
         grid-area: 2/2/2/2;
 
-        background: var(--ctp-mantle);
+        background: light-dark(var(--color-neutral-300), var(--color-neutral-800));
         border-radius: 9px;
         border: 3px solid var(--ctp-overlay1);
 
@@ -80,7 +76,6 @@
     #dialog-content :global(input) {
         min-height: 30px;
         min-width: 180px;
-        font-family: var(--stack-code);
         font-size: 14px;
     }
 
@@ -94,6 +89,6 @@
     }
 
     .error {
-        color: var(--ctp-red);
+        color: var(--color-red-600);
     }
 </style>

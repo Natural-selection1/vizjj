@@ -1,11 +1,14 @@
 @import "tailwindcss";
 @import "@skeletonlabs/skeleton";
 @import "@skeletonlabs/skeleton/optional/presets";
-@import "@skeletonlabs/skeleton/themes/rose";
+@import "@skeletonlabs/skeleton/themes/concord";
 @source "../node_modules/@skeletonlabs/skeleton-svelte/dist";
 
 @import "modern-normalize";
 @import "@catppuccin/palette/css/catppuccin.css";
+
+@custom-variant light (&:where(.light, .light *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
     overscroll-behavior: none;
@@ -34,7 +37,6 @@
     --ctp-overlay1-rgb: var(--ctp-latte-overlay1-rgb);
     --ctp-overlay2: var(--ctp-latte-overlay2);
     --ctp-overlay2-rgb: var(--ctp-latte-overlay2-rgb);
-    --ctp-subtext0: var(--ctp-latte-subtext0);
     --ctp-subtext1: var(--ctp-latte-subtext1);
     --ctp-text: var(--ctp-latte-text);
     --ctp-lavender: var(--ctp-latte-lavender);
@@ -51,4 +53,11 @@
     --ctp-pink: var(--ctp-latte-pink);
     --ctp-flamingo: var(--ctp-latte-flamingo);
     --ctp-rosewater: var(--ctp-latte-rosewater);
+}
+
+.light {
+    --body-background-color: var(--color-surface-100);
+}
+
+.dark {
 }
