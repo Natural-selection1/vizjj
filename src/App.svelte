@@ -35,6 +35,11 @@
     // for open recent workspaces when error dialogs happen
     let recentWorkspaces: string[] = $state([]);
 
+    // state for dragging the separator
+    let isDragging = $state(false);
+    let leftPanelWidth = $state(50);
+    let shellElement: HTMLElement;
+
     document.addEventListener("keydown", (event) => {
         if (event.key === "o" && event.ctrlKey) {
             event.preventDefault();
@@ -143,17 +148,38 @@
             },
         });
     }
+
+    // functions for dragging the separator
+    function separatorMouseDown(event: MouseEvent) {
+        isDragging = true;
+        event.preventDefault();
+        document.addEventListener("mousemove", separatorMouseMove);
+        document.addEventListener("mouseup", separatorMouseUp);
+    }
+
+    function separatorMouseMove(event: MouseEvent) {
+        if (!isDragging || !shellElement) return;
+        const rect = shellElement.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const percentage = (x / rect.width) * 100;
+        leftPanelWidth = Math.max(20, Math.min(80, percentage));
+    }
+
+    function separatorMouseUp() {
+        isDragging = false;
+        document.removeEventListener("mousemove", separatorMouseMove);
+        document.removeEventListener("mouseup", separatorMouseUp);
+    }
 </script>
 
 <Zone operand={{ type: "Repository" }} alwaysTarget>
     {#snippet children({ target })}
-        <div id="shell">
+        <div
+            id="shell"
+            bind:this={shellElement}
+            style="--left-width: {leftPanelWidth}%; --right-width: {100 - leftPanelWidth}%;">
             {#if $repoConfigEvent.type == "Initial"}
-                <Pane>
-                    {#snippet header()}
-                        <h2>Loading...</h2>
-                    {/snippet}
-                </Pane>
+                <Pane>{#snippet header()}<h2>Loading...</h2>{/snippet}</Pane>
                 <div class="separator"></div>
                 <Pane />
             {:else if $repoConfigEvent.type == "Workspace"}
@@ -163,7 +189,16 @@
                         latest_query={$repoConfigEvent.latest_query} />
                 {/key}
 
-                <div class="separator"></div>
+                <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+                <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+                <div
+                    class="separator"
+                    class:dragging={isDragging}
+                    onmousedown={separatorMouseDown}
+                    style="cursor: col-resize;"
+                    role="separator"
+                    tabindex="0">
+                </div>
 
                 <BoundQuery query={selection}>
                     {#snippet children({ data })}
@@ -171,9 +206,7 @@
                             <RevisionPane rev={data} />
                         {:else}
                             <Pane>
-                                {#snippet header()}
-                                    <h2>Not Found</h2>
-                                {/snippet}
+                                {#snippet header()}<h2>Not Found</h2>{/snippet}
                                 {#snippet body()}
                                     <p>
                                         Revision <IdSpan id={data.id.change} />
@@ -185,20 +218,12 @@
                     {/snippet}
                     {#snippet error({ message })}
                         <Pane>
-                            {#snippet header()}
-                                <h2>Error</h2>
-                            {/snippet}
-                            {#snippet body()}
-                                <p>{message}</p>
-                            {/snippet}
+                            {#snippet header()}<h2>Error</h2>{/snippet}
+                            {#snippet body()}<p>{message}</p>{/snippet}
                         </Pane>
                     {/snippet}
                     {#snippet wait()}
-                        <Pane>
-                            {#snippet header()}
-                                <h2>Loading...</h2>
-                            {/snippet}
-                        </Pane>
+                        <Pane>{#snippet header()}<h2>Loading...</h2>{/snippet}</Pane>
                     {/snippet}
                 </BoundQuery>
             {:else if $repoConfigEvent.type == "LoadError"}
@@ -278,8 +303,8 @@
         height: 100vh;
         display: grid;
         user-select: none;
-
-        grid-template-columns: 1fr 3px 1fr;
+        overflow: hidden;
+        grid-template-columns: var(--left-width) 4px var(--right-width);
         grid-template-rows: 1fr 3px 30px;
         grid-template-areas:
             "content content content"
@@ -289,5 +314,14 @@
 
     .separator {
         background: light-dark(var(--color-surface-300), var(--color-surface-700));
+        transition: background-color 0.2s ease;
+
+        &:hover {
+            background: light-dark(var(--color-surface-400), var(--color-surface-600));
+        }
+
+        &.dragging {
+            background: light-dark(var(--color-primary-500), var(--color-primary-400));
+        }
     }
 </style>
