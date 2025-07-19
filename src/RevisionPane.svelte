@@ -24,7 +24,6 @@
     let shortCommitId = $derived(getShortId(rev.header.id.commit));
     let standardCommitId = $derived(getStandardId(rev.header.id.commit));
 
-    const CONTEXT = 3;
     const currentDescription = $derived(rev.header.description.lines.join("\n"));
     let mutator = $state(new RevisionMutator(rev.header));
     let fullDescription = $derived(currentDescription);
@@ -320,19 +319,18 @@
     }
 
     .signature-commands {
-        height: 30px;
         width: 100%;
         display: grid;
         grid-template-columns: min-content auto auto 1fr auto;
         align-items: center;
         gap: 6px;
-        padding: 0 3px;
+        padding: 4px 2px;
         flex-shrink: 0;
     }
 
     .parents {
         border-top: 1px solid var(--ctp-overlay0);
-        padding: 0 3px;
+        padding: 4px 2px;
     }
 
     .parent {
@@ -344,8 +342,7 @@
 
     .move-commands {
         border-top: 1px solid var(--ctp-overlay0);
-        height: 30px;
-        padding: 0 3px;
+        padding: 4px 2px;
         display: grid;
         grid-template-columns: 1fr auto auto;
         align-items: center;

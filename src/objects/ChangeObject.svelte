@@ -90,7 +90,7 @@
     @reference "tailwindcss";
 
     .layout {
-        height: 30px;
+        height: calc(var(--app-font-size) * 1.5);
         display: flex;
         align-items: center;
         justify-content: space-between;

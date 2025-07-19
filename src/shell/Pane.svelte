@@ -15,7 +15,7 @@
 <style>
     section {
         display: grid;
-        grid-template-rows: 40px 1fr;
+        grid-template-rows: auto 1fr;
         grid-template-columns: 100%;
         overflow: hidden;
     }

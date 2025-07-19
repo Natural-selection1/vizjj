@@ -152,10 +152,6 @@
         white-space: nowrap;
     }
 
-    .substatus > span {
-        height: 21px;
-    }
-
     #status-remotes {
         justify-content: space-evenly;
     }

@@ -230,6 +230,5 @@
 
     input {
         font-family: var(--stack-code);
-        font-size: 14px;
     }
 </style>

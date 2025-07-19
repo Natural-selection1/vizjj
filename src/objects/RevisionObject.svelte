@@ -120,7 +120,6 @@
         pointer-events: auto;
         /* layout summary components along a text line */
         width: 100%;
-        height: 30px;
         display: grid;
         grid-template-areas: ". desc refs";
         grid-template-columns: auto 1fr auto;
@@ -134,10 +133,6 @@
     .layout.target {
         background: var(--ctp-flamingo);
         color: black;
-    }
-
-    .layout > :global(span) {
-        line-height: 27px;
     }
 
     .desc {
