@@ -63,9 +63,11 @@
         }
     });
 
-    let settings: Settings = {
+    let settings: Settings = $state({
         markUnpushedBranches: true,
-    };
+        fontSize: 16,
+    });
+    // svelte-ignore state_referenced_locally
     setContext<Settings>("settings", settings);
 
     onEvent("vizjj://context/revision", mutateRevision);
@@ -94,6 +96,8 @@
         $revisionSelectEvent = undefined;
         if (config.type == "Workspace") {
             settings.markUnpushedBranches = config.mark_unpushed_branches;
+            settings.fontSize = config.font_size;
+            applyFontSize(settings.fontSize);
             $repoStatusEvent = config.status;
         }
     }
@@ -169,6 +173,11 @@
         isDragging = false;
         document.removeEventListener("mousemove", separatorMouseMove);
         document.removeEventListener("mouseup", separatorMouseUp);
+    }
+
+    // apply font size to page
+    function applyFontSize(fontSize: number) {
+        document.documentElement.style.setProperty("--app-font-size", `${fontSize}px`);
     }
 </script>
 
