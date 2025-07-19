@@ -19,6 +19,7 @@ pub trait GGSettings {
     fn ui_mark_unpushed_bookmarks(&self) -> bool;
     #[allow(dead_code)]
     fn ui_recent_workspaces(&self) -> Vec<String>;
+    fn ui_font_size(&self) -> usize;
 }
 
 impl GGSettings for UserSettings {
@@ -57,6 +58,10 @@ impl GGSettings for UserSettings {
                     .collect()
             })
             .unwrap_or_default()
+    }
+
+    fn ui_font_size(&self) -> usize {
+        self.get_int("vizjj.ui.font-size").unwrap_or(16) as usize
     }
 }
 
