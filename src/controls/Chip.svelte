@@ -26,13 +26,7 @@
 
     .chip {
         pointer-events: auto;
-
         font-family: var(--stack-code);
-        font-size: smaller;
-
-        height: 24px;
-        line-height: 16px;
-
         display: flex;
         align-items: center;
         border: 1px solid var(--ctp-overlay1);

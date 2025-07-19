@@ -19,8 +19,7 @@
 <style>
     .feather {
         pointer-events: none;
-        height: 16px;
-        width: 16px;
+        height: var(--app-font-size);
         fill: none;
         stroke: currentColor;
         stroke-linecap: round;

@@ -18,6 +18,7 @@
     @reference "tailwindcss";
 
     .id {
+        font-size: calc(var(--app-font-size) - 4px);
         pointer-events: none;
         color: light-dark(
             --alpha(var(--color-stone-700) / 60%),
@@ -26,12 +27,12 @@
     }
 
     .ChangeId {
-        font-size: 18px;
+        font-size: var(--app-font-size);
         color: light-dark(var(--color-rose-500), var(--color-rose-400));
     }
 
     .CommitId {
-        font-size: 18px;
+        font-size: var(--app-font-size);
         color: light-dark(var(--color-teal-500), var(--color-teal-400));
     }
 

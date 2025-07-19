@@ -44,7 +44,6 @@
 
     .workspace-button {
         color: light-dark(var(--color-cyan-700), var(--color-cyan-500));
-        font-size: 18px;
 
         &:hover {
             color: var(--color-emerald-600);

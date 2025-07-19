@@ -31,8 +31,6 @@
 
     button {
         display: flex;
-        height: 24px;
-        font-size: 16px;
         outline: none;
         background: light-dark(--alpha(var(--color-slate-400) / 50%), var(--color-stone-700));
         border-width: 1px;
