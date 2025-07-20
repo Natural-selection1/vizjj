@@ -22,7 +22,7 @@ jobs:
         run: bun run check
 
       - name: check frontend formatting
-        run: bun run fmt:ci
+        run: bun run fmt:ci:frontend
 
   rust-check:
     runs-on: ${{ matrix.os }}
@@ -59,7 +59,7 @@ jobs:
 
       - name: check rust formatting
         if: matrix.os == 'ubuntu-latest'
-        run: cd src-tauri && cargo fmt --check
+        run: bun run fmt:ci:backend
 
       - name: check rust linting
         run: bun run clippy:ci
