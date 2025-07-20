@@ -12,7 +12,9 @@
 </script>
 
 <ModalDialog {title} error={severe} cancel={onClose}>
-    {@render children?.()}
+    <div class="error-content">
+        {@render children?.()}
+    </div>
 
     {#snippet commands()}
         {#if onClose}
@@ -20,3 +22,13 @@
         {/if}
     {/snippet}
 </ModalDialog>
+
+<style>
+    .error-content {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        white-space: normal;
+        line-height: 1.5;
+        margin-bottom: 12px;
+    }
+</style>

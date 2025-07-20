@@ -46,6 +46,8 @@
     .author {
         opacity: 0.55;
         white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .inline {

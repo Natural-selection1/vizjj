@@ -143,7 +143,7 @@
 
         overflow-x: hidden;
         overflow-y: auto;
-        scrollbar-width: thin;
+        scrollbar-width: none;
 
         &:focus-visible {
             @apply outline-violet-500;
