@@ -1,0 +1,8 @@
+# frontend
+node_modules
+dist
+package-lock.json
+
+# backend
+src-tauri/gen
+src-tauri/targets
