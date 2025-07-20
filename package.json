@@ -12,9 +12,12 @@
     "gen": "cd src-tauri && cargo test -F ts-rs && bun run fmt",
     "test": "cd src-tauri && cargo test",
     "fix": "bun run fmt && bun run clippy",
-    "fmt": "bun x prettier --write \"**/*.{js,ts,svelte,json,css,md,yml}\"",
-    "fmt:ci": "bun x prettier --check \"**/*.{js,ts,svelte,json,css,md,yml}\"",
+    "fmt": "bun run fmt:frontend && bun run fmt:backend",
+    "fmt:frontend": "bun x prettier --write \"**/*.{js,ts,svelte,json,css,md,yml}\"",
+    "fmt:backend": "cd src-tauri && cargo fmt",
     "clippy": "cd src-tauri && cargo clippy --fix --all-targets --allow-dirty",
+    "fmt:ci:frontend": "bun x prettier --check \"**/*.{js,ts,svelte,json,css,md,yml}\"",
+    "fmt:ci:backend": "cd src-tauri && cargo fmt --check",
     "clippy:ci": "cd src-tauri && cargo clippy -- -D warnings"
   },
   "dependencies": {
