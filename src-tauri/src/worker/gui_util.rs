@@ -98,7 +98,7 @@ impl From<BackendError> for RevsetError {
 }
 
 impl WorkerSession {
-    pub fn load_directory(&mut self, cwd: &Path) -> Result<WorkspaceSession> {
+    pub fn load_directory(&mut self, cwd: &Path) -> Result<WorkspaceSession<'_>> {
         let factory = DefaultWorkspaceLoaderFactory;
         let loader = factory.create(find_workspace_dir(cwd))?;
 
@@ -292,7 +292,8 @@ impl WorkspaceSession<'_> {
             (Some(commit), None) => Ok(Some(commit?)),
             (None, _) => Ok(None),
             (Some(_), Some(_)) => {
-                let commit_revset = self.evaluate_revset_commits(&[id.commit.clone()])?;
+                let commit_revset =
+                    self.evaluate_revset_commits(std::slice::from_ref(&id.commit))?;
                 let mut commit_iter = commit_revset
                     .as_ref()
                     .iter()
@@ -398,7 +399,7 @@ impl WorkspaceSession<'_> {
             .expect("prefix context disambiguate_within()")
     }
 
-    fn resolver(&self) -> DefaultSymbolResolver {
+    fn resolver(&self) -> DefaultSymbolResolver<'_> {
         DefaultSymbolResolver::new(
             self.operation.repo.as_ref(),
             &([] as [Box<dyn SymbolResolverExtension>; 0]),
@@ -657,10 +658,9 @@ impl WorkspaceSession<'_> {
             WorkingCopyFreshness::Fresh => (repo, wc_commit),
             WorkingCopyFreshness::Updated(wc_operation) => {
                 let repo = repo.reload_at(&wc_operation)?;
-                let wc_commit = if let Some(wc_commit) = get_wc_commit(&repo)? {
-                    wc_commit
-                } else {
-                    return Ok(false);
+                let wc_commit = match get_wc_commit(&repo)? {
+                    Some(wc_commit) => wc_commit,
+                    None => return Ok(false),
                 };
                 (repo, wc_commit)
             }
@@ -731,19 +731,20 @@ impl WorkspaceSession<'_> {
     ) -> Result<Option<CheckoutStats>> {
         let old_tree_id = maybe_old_commit.map(|commit| commit.tree_id().clone());
 
-        Ok(if Some(new_commit.tree_id()) != old_tree_id.as_ref() {
-            Some(self.workspace.check_out(
+        Ok(match Some(new_commit.tree_id()) != old_tree_id.as_ref() {
+            true => Some(self.workspace.check_out(
                 self.operation.repo.op_id().clone(),
                 old_tree_id.as_ref(),
                 new_commit,
                 &CheckoutOptions {
                     conflict_marker_style: ConflictMarkerStyle::default(),
                 },
-            )?)
-        } else {
-            let locked_ws = self.workspace.start_working_copy_mutation()?;
-            locked_ws.finish(self.operation.repo.op_id().clone())?;
-            None
+            )?),
+            false => {
+                let locked_ws = self.workspace.start_working_copy_mutation()?;
+                locked_ws.finish(self.operation.repo.op_id().clone())?;
+                None
+            }
         })
     }
 
@@ -755,32 +756,33 @@ impl WorkspaceSession<'_> {
         }
 
         let new_git_head = tx.repo().view().git_head().clone();
-        if let Some(new_git_head_id) = new_git_head.as_normal() {
-            let workspace_name = self.workspace.workspace_name().to_owned();
-
-            if let Some(old_wc_commit_id) =
-                self.operation.repo.view().get_wc_commit_id(&workspace_name)
-            {
-                let old_wc_commit = tx.repo().store().get_commit(old_wc_commit_id)?;
-                tx.repo_mut().record_abandoned_commit(&old_wc_commit);
+        match new_git_head.as_normal() {
+            None => {
+                self.finish_transaction(tx, "import git head")?;
             }
-
-            let new_git_head_commit = tx.repo().store().get_commit(new_git_head_id)?;
-            tx.repo_mut()
-                .check_out(workspace_name.clone(), &new_git_head_commit)?;
-
-            let mut locked_ws = self.workspace.start_working_copy_mutation()?;
-
-            locked_ws.locked_wc().reset(&new_git_head_commit)?;
-            tx.repo_mut().rebase_descendants()?;
-
-            self.operation =
-                SessionOperation::new(&workspace_name, &self.data, tx.commit("import git head")?);
-
-            locked_ws.finish(self.operation.repo.op_id().clone())?;
-        } else {
-            self.finish_transaction(tx, "import git head")?;
+            Some(new_git_head_id) => {
+                let workspace_name = self.workspace.workspace_name().to_owned();
+                if let Some(old_wc_commit_id) =
+                    self.operation.repo.view().get_wc_commit_id(&workspace_name)
+                {
+                    let old_wc_commit = tx.repo().store().get_commit(old_wc_commit_id)?;
+                    tx.repo_mut().record_abandoned_commit(&old_wc_commit);
+                }
+                let new_git_head_commit = tx.repo().store().get_commit(new_git_head_id)?;
+                tx.repo_mut()
+                    .check_out(workspace_name.clone(), &new_git_head_commit)?;
+                let mut locked_ws = self.workspace.start_working_copy_mutation()?;
+                locked_ws.locked_wc().reset(&new_git_head_commit)?;
+                tx.repo_mut().rebase_descendants()?;
+                self.operation = SessionOperation::new(
+                    &workspace_name,
+                    &self.data,
+                    tx.commit("import git head")?,
+                );
+                locked_ws.finish(self.operation.repo.op_id().clone())?;
+            }
         }
+
         Ok(())
     }
 
@@ -880,12 +882,11 @@ impl WorkspaceData {
             path_converter: &self.path_converter,
             workspace_name: name,
         };
-        let now = if let Some(timestamp) = self.settings.commit_timestamp() {
-            chrono::Local
+        let now = match self.settings.commit_timestamp() {
+            Some(timestamp) => chrono::Local
                 .timestamp_millis_opt(timestamp.timestamp.0)
-                .unwrap()
-        } else {
-            chrono::Local::now()
+                .unwrap(),
+            None => chrono::Local::now(),
         };
         RevsetParseContext {
             aliases_map: &self.aliases_map,
@@ -917,11 +918,10 @@ impl SessionOperation {
 
         // guarantee that an index can be populated - we will unwrap later
         let prefix_context =
-            IdPrefixContext::default().disambiguate_within(if !revset_string.is_empty() {
-                parse_revset(&data.parse_context(id), &revset_string)
-                    .expect("init prefix context: parse revsets.short-prefixes")
-            } else {
-                RevsetExpression::all()
+            IdPrefixContext::default().disambiguate_within(match !revset_string.is_empty() {
+                true => parse_revset(&data.parse_context(id), &revset_string)
+                    .expect("init prefix context: parse revsets.short-prefixes"),
+                false => RevsetExpression::all(),
             });
 
         SessionOperation {
@@ -941,20 +941,19 @@ impl SessionOperation {
         fn get_excludes_file_path(config: &gix::config::File) -> Option<PathBuf> {
             // TODO: maybe use path() and interpolate(), which can process non-utf-8
             // path on Unix.
-            if let Some(value) = config.string("core.excludesFile") {
-                std::str::from_utf8(&value)
+            match config.string("core.excludesFile") {
+                Some(value) => std::str::from_utf8(&value)
                     .ok()
-                    .map(file_util::expand_home_path)
-            } else {
-                xdg_config_home().ok().map(|x| x.join("git").join("ignore"))
+                    .map(file_util::expand_home_path),
+                None => xdg_config_home().ok().map(|x| x.join("git").join("ignore")),
             }
         }
 
         fn xdg_config_home() -> Result<PathBuf, VarError> {
-            if let Ok(x) = std::env::var("XDG_CONFIG_HOME") {
-                if !x.is_empty() {
-                    return Ok(PathBuf::from(x));
-                }
+            if let Ok(x) = std::env::var("XDG_CONFIG_HOME")
+                && !x.is_empty()
+            {
+                return Ok(PathBuf::from(x));
             }
             std::env::var("HOME").map(|x| Path::new(&x).join(".config"))
         }
@@ -967,10 +966,10 @@ impl SessionOperation {
             }
             git_ignores = git_ignores
                 .chain_with_file("", git_backend.git_repo_path().join("info").join("exclude"))?;
-        } else if let Ok(git_config) = gix::config::File::from_globals() {
-            if let Some(excludes_file_path) = get_excludes_file_path(&git_config) {
-                git_ignores = git_ignores.chain_with_file("", excludes_file_path)?;
-            }
+        } else if let Ok(git_config) = gix::config::File::from_globals()
+            && let Some(excludes_file_path) = get_excludes_file_path(&git_config)
+        {
+            git_ignores = git_ignores.chain_with_file("", excludes_file_path)?;
         }
         Ok(git_ignores)
     }
@@ -1015,11 +1014,7 @@ impl RefIndex {
     }
 
     fn get(&self, id: &CommitId) -> &[messages::StoreRef] {
-        if let Some(names) = self.index.get(id) {
-            names
-        } else {
-            &[]
-        }
+        self.index.get(id).map_or(&[], |names| names)
     }
 }
 

@@ -201,10 +201,10 @@ fn main() -> Result<()> {
             window.listen("vizjj://revision/select", move |event| {
                 let payload: Result<Option<messages::RevHeader>, serde_json::Error> =
                     serde_json::from_str(event.payload());
-                if let Some(menu) = handle.menu() {
-                    if let Ok(selection) = payload {
-                        handler::fatal!(menu::handle_selection(menu, selection));
-                    }
+                if let Some(menu) = handle.menu()
+                    && let Ok(selection) = payload
+                {
+                    handler::fatal!(menu::handle_selection(menu, selection));
                 }
             });
 
