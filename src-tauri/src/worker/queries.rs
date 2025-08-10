@@ -198,15 +198,15 @@ impl<'q, 'w> QuerySession<'q, 'w> {
                 let indirect = edge.edge_type != GraphEdgeType::Direct;
 
                 for (slot, stem) in self.state.stems.iter().enumerate() {
-                    if let Some(stem) = stem {
-                        if stem.target == edge.target {
-                            lines.push(LogLine::ToIntersection {
-                                indirect,
-                                source: LogCoordinates(column, row),
-                                target: LogCoordinates(slot, row + 1),
-                            });
-                            continue 'edges;
-                        }
+                    if let Some(stem) = stem
+                        && stem.target == edge.target
+                    {
+                        lines.push(LogLine::ToIntersection {
+                            indirect,
+                            source: LogCoordinates(column, row),
+                            target: LogCoordinates(slot, row + 1),
+                        });
+                        continue 'edges;
                     }
                 }
 
@@ -270,10 +270,10 @@ impl<'q, 'w> QuerySession<'q, 'w> {
 
     fn find_stem_for_commit(&self, id: &CommitId) -> Option<usize> {
         for (slot, stem) in self.state.stems.iter().enumerate() {
-            if let Some(LogStem { target, .. }) = stem {
-                if target == id {
-                    return Some(slot);
-                }
+            if let Some(LogStem { target, .. }) = stem
+                && target == id
+            {
+                return Some(slot);
             }
         }
 
@@ -302,29 +302,27 @@ pub fn query_revision(ws: &WorkspaceSession, id: RevId) -> Result<RevResult> {
 
     let mut conflicts = Vec::new();
     for (path, entry) in parent_tree.entries() {
-        if let Ok(entry) = entry {
-            if !entry.is_resolved() {
-                match conflicts::materialize_tree_value(ws.repo().store(), &path, entry)
-                    .block_on()?
-                {
-                    MaterializedTreeValue::FileConflict(file) => {
-                        let mut hunk_content = vec![];
-                        conflicts::materialize_merge_result(
-                            &file.contents,
-                            ConflictMarkerStyle::default(),
-                            &mut hunk_content,
-                        )?;
-                        let mut hunks = get_unified_hunks(3, &hunk_content, &[])?;
-                        if let Some(hunk) = hunks.pop() {
-                            conflicts.push(RevConflict {
-                                path: ws.format_path(path)?,
-                                hunk,
-                            });
-                        }
+        if let Ok(entry) = entry
+            && !entry.is_resolved()
+        {
+            match conflicts::materialize_tree_value(ws.repo().store(), &path, entry).block_on()? {
+                MaterializedTreeValue::FileConflict(file) => {
+                    let mut hunk_content = vec![];
+                    conflicts::materialize_merge_result(
+                        &file.contents,
+                        ConflictMarkerStyle::default(),
+                        &mut hunk_content,
+                    )?;
+                    let mut hunks = get_unified_hunks(3, &hunk_content, &[])?;
+                    if let Some(hunk) = hunks.pop() {
+                        conflicts.push(RevConflict {
+                            path: ws.format_path(path)?,
+                            hunk,
+                        });
                     }
-                    _ => {
-                        log::warn!("nonresolved tree entry did not materialise as conflict");
-                    }
+                }
+                _ => {
+                    log::warn!("nonresolved tree entry did not materialise as conflict");
                 }
             }
         }
