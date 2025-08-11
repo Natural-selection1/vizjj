@@ -66,8 +66,8 @@
         <Zone {operand}>
             {#snippet children({ target })}
                 <div class="layout" class:target>
+                    <Icon name={icon} state={context ? null : fileState} />
                     <div class="file-info">
-                        <Icon name={icon} state={context ? null : fileState} />
                         <span>{hint ?? change.path.relative_path}</span>
                     </div>
                     {#if stats.additions > 0 || stats.deletions > 0}
@@ -110,6 +110,10 @@
         gap: 6px;
         overflow: hidden;
         flex: 1;
+
+        /* fix #48 */
+        direction: rtl;
+        white-space: nowrap;
     }
 
     .stats {
