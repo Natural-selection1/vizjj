@@ -105,8 +105,6 @@
     }
 
     .file-info {
-        display: flex;
-        align-items: center;
         gap: 6px;
         overflow: hidden;
         flex: 1;
