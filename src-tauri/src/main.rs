@@ -549,9 +549,7 @@ fn try_open_repository(window: &Window, cwd: Option<PathBuf>) -> Result<()> {
                         });
                     }
                 }
-                _ => {
-                    window.set_title("vizjj - Gui for JJ")?;
-                }
+                _ => window.set_title("vizjj - Gui for JJ")?,
             }
             window.emit("vizjj://repo/config", config)?;
         }
@@ -629,10 +627,8 @@ fn add_recent_workspaces(window: Window, repo_path: &str) -> Result<()> {
     recent.truncate(5);
 
     #[cfg(windows)]
-    {
-        // update the shell jumplist; this can be slow
-        windows::update_jump_list(&mut recent)?;
-    }
+    // update the shell jumplist; this can be slow
+    windows::update_jump_list(&mut recent)?;
 
     session_tx.send(SessionEvent::WriteConfigArray {
         key: vec![
