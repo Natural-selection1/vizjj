@@ -232,6 +232,35 @@ pub fn build_context(
                 true,
                 None::<&str>,
             )?,
+            &PredefinedMenuItem::separator(app_handle)?,
+            &MenuItem::with_id(
+                app_handle,
+                "file_open_with_default_app",
+                "Open with Default App",
+                true,
+                None::<&str>,
+            )?,
+            &MenuItem::with_id(
+                app_handle,
+                "file_open_in_explorer",
+                "Open in File Explorer",
+                true,
+                None::<&str>,
+            )?,
+            &MenuItem::with_id(
+                app_handle,
+                "file_copy_full_path",
+                "Copy File Path",
+                true,
+                None::<&str>,
+            )?,
+            &MenuItem::with_id(
+                app_handle,
+                "file_copy_relative_path",
+                "Copy Relative Path",
+                true,
+                None::<&str>,
+            )?,
         ],
     )?;
 
@@ -472,6 +501,12 @@ pub fn handle_event(window: &Window, event: MenuEvent) -> Result<()> {
         "branch_fetch_single" => window.emit("vizjj://context/branch", "fetch-single")?,
         "branch_rename" => window.emit("vizjj://context/branch", "rename")?,
         "branch_delete" => window.emit("vizjj://context/branch", "delete")?,
+        "file_open_with_default_app" => {
+            window.emit("vizjj://context/file", "open-with-default-app")?
+        }
+        "file_open_in_explorer" => window.emit("vizjj://context/file", "open-in-explorer")?,
+        "file_copy_full_path" => window.emit("vizjj://context/file", "copy-full-path")?,
+        "file_copy_relative_path" => window.emit("vizjj://context/file", "copy-relative-path")?,
         _ => (),
     };
 
