@@ -409,11 +409,9 @@ pub fn handle_context(window: Window, ctx: Operand) -> Result<()> {
                 "branch_untrack",
                 matches!(
                     r#ref,
-                    StoreRef::LocalBookmark {
-                        ref tracking_remotes,
-                        ..
-                    } if !tracking_remotes.is_empty()
-                ) || matches!(
+                    StoreRef::LocalBookmark { ref tracking_remotes, ..} if !tracking_remotes.is_empty()
+                )
+                || matches!(
                     r#ref,
                     StoreRef::RemoteBookmark {
                         is_synced: false, // we can *see* the remote ref, and
@@ -426,8 +424,8 @@ pub fn handle_context(window: Window, ctx: Operand) -> Result<()> {
 
             // push a local to its remotes, or finish a CLI delete
             context_menu.enable("branch_push_all",
-                matches!(r#ref, StoreRef::LocalBookmark { ref tracking_remotes, .. } if !tracking_remotes.is_empty()) ||
-                matches!(r#ref, StoreRef::RemoteBookmark { is_tracked: true, is_absent: true, .. }))?;
+                matches!(r#ref, StoreRef::LocalBookmark { ref tracking_remotes, .. } if !tracking_remotes.is_empty())
+                || matches!(r#ref, StoreRef::RemoteBookmark { is_tracked: true, is_absent: true, .. }))?;
 
             // push a local to a selected remote, tracking first if necessary
             context_menu.enable("branch_push_single",
@@ -435,8 +433,8 @@ pub fn handle_context(window: Window, ctx: Operand) -> Result<()> {
 
             // fetch a local's remotes, or just a remote (unless we're deleting it; that would be silly)
             context_menu.enable("branch_fetch_all",
-                matches!(r#ref, StoreRef::LocalBookmark { ref tracking_remotes, .. } if !tracking_remotes.is_empty()) ||
-                matches!(r#ref, StoreRef::RemoteBookmark { is_tracked, is_absent, .. } if (!is_tracked || !is_absent)))?;
+                matches!(r#ref, StoreRef::LocalBookmark { ref tracking_remotes, .. } if !tracking_remotes.is_empty())
+                || matches!(r#ref, StoreRef::RemoteBookmark { is_tracked, is_absent, .. } if (!is_tracked || !is_absent)))?;
 
             // fetch a local, tracking first if necessary
             context_menu.enable("branch_fetch_single",
@@ -534,20 +532,18 @@ trait Enabler {
 
 impl Enabler for Menu<Wry> {
     fn enable(&self, id: &str, value: bool) -> tauri::Result<()> {
-        if let Some(item) = self.get(id).as_ref().and_then(|item| item.as_menuitem()) {
-            item.set_enabled(value)
-        } else {
-            Ok(())
+        match self.get(id).as_ref().and_then(|item| item.as_menuitem()) {
+            Some(item) => item.set_enabled(value),
+            None => Ok(()),
         }
     }
 }
 
 impl Enabler for Submenu<Wry> {
     fn enable(&self, id: &str, value: bool) -> tauri::Result<()> {
-        if let Some(item) = self.get(id).as_ref().and_then(|item| item.as_menuitem()) {
-            item.set_enabled(value)
-        } else {
-            Ok(())
+        match self.get(id).as_ref().and_then(|item| item.as_menuitem()) {
+            Some(item) => item.set_enabled(value),
+            None => Ok(()),
         }
     }
 }
