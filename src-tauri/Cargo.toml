@@ -61,6 +61,7 @@ chrono = { version = "0.4.38", features = ["serde"] }
 git2 = { version = "0.20.1", features = ["vendored-libgit2"] }
 
 # extra deps not used by JJ
+opener = { version = "0.8.2", features = ["reveal"] }
 log = "0.4"
 futures-util = "0.3.30"
 ts-rs = { version = "7.1.1", features = ["chrono-impl"], optional = true }

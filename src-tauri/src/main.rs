@@ -163,6 +163,8 @@ fn main() -> Result<()> {
             undo_operation,
             query_recent_workspaces,
             open_workspace_at_path,
+            open_file_in_explorer,
+            open_file_with_default_app,
         ])
         .menu(menu::build_main)
         .setup(|app| {
@@ -678,4 +680,16 @@ fn open_workspace_at_path(window: Window, path: String) -> Result<(), InvokeErro
             Err(InvokeError::from_anyhow(err))
         }
     }
+}
+
+#[tauri::command(async, rename_all = "snake_case")]
+fn open_file_in_explorer(file_path: String) -> Result<(), InvokeError> {
+    opener::reveal(&file_path).map_err(|e| InvokeError::from_anyhow(e.into()))?;
+    Ok(())
+}
+
+#[tauri::command(async, rename_all = "snake_case")]
+fn open_file_with_default_app(file_path: String) -> Result<(), InvokeError> {
+    opener::open(&file_path).map_err(|e| InvokeError::from_anyhow(e.into()))?;
+    Ok(())
 }

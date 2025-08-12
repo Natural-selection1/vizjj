@@ -11,6 +11,7 @@
     import type { RevId } from "./messages/RevId";
     import type { RevResult } from "./messages/RevResult";
     import ChangeMutator from "./mutators/ChangeMutator";
+    import FileMutator from "./mutators/FileMutator";
     import RefMutator from "./mutators/RefMutator";
     import RevisionMutator from "./mutators/RevisionMutator";
     import Zone from "./objects/Zone.svelte";
@@ -73,6 +74,7 @@
     onEvent("vizjj://context/revision", mutateRevision);
     onEvent("vizjj://context/tree", mutateTree);
     onEvent("vizjj://context/branch", mutateRef);
+    onEvent("vizjj://context/file", mutateFile);
     onEvent("vizjj://input", requestInput);
 
     $effect(() => {
@@ -140,6 +142,15 @@
     function mutateRef(event: string) {
         if ($currentContext?.type == "Ref") {
             new RefMutator($currentContext.ref).handle(event);
+        }
+        $currentContext = null;
+    }
+
+    function mutateFile(event: string) {
+        if ($currentContext?.type == "Change") {
+            const workspaceRoot =
+                $repoConfigEvent?.type === "Workspace" ? $repoConfigEvent.absolute_path : "";
+            new FileMutator($currentContext.path, workspaceRoot).handle(event);
         }
         $currentContext = null;
     }
