@@ -26,7 +26,7 @@ pub trait Session {
 /// messages sent to a worker from other threads. most come with a channel allowing a response
 #[derive(Debug)]
 pub enum SessionEvent {
-    #[allow(dead_code)] // used by tests
+    #[allow(dead_code, reason = "used by tests")]
     EndSession,
     OpenWorkspace {
         tx: Sender<Result<messages::RepoConfig>>,
@@ -145,9 +145,7 @@ impl Session for WorkerSession {
                     };
 
                     latest_wd = Some(resolved_wd);
-
                     ws.import_and_snapshot(false)?;
-
                     tx.send(ws.format_config())?;
 
                     match ws.handle_events(rx).context("WorkspaceSession")? {

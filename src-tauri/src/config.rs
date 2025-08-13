@@ -17,7 +17,7 @@ pub trait GGSettings {
     fn query_auto_snapshot(&self) -> Option<bool>;
     fn ui_theme_override(&self) -> Option<String>;
     fn ui_mark_unpushed_bookmarks(&self) -> bool;
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "already impl in main.rs::add_recent_workspaces")]
     fn ui_recent_workspaces(&self) -> Vec<String>;
     fn ui_font_size(&self) -> usize;
 }
@@ -70,10 +70,10 @@ pub fn read_config(repo_path: Option<&Path>) -> Result<(UserSettings, RevsetAlia
     let mut config_env = ConfigEnv::from_environment(&Ui::null());
 
     let jj_default_layers = default_config_layers();
-    let gg_default_layer =
+    let vizjj_default_layer =
         ConfigLayer::parse(ConfigSource::Default, include_str!("./config/vizjj.toml"))?;
     layers.extend(jj_default_layers);
-    layers.push(gg_default_layer);
+    layers.push(vizjj_default_layer);
 
     let mut raw_config = config_from_environment(layers);
     config_env.reload_user_config(&mut raw_config)?;
