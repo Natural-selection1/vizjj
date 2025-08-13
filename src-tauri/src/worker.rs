@@ -66,7 +66,7 @@ pub struct WorkerSession {
     pub latest_query: Option<String>,
     pub callbacks: Box<dyn WorkerCallbacks>,
     pub working_directory: Option<PathBuf>,
-    #[allow(dead_code, reason = "read in handle_events")]
+    #[allow(dead_code, reason = "read in session.rs::handle_events")]
     pub global_settings: Option<UserSettings>,
 }
 

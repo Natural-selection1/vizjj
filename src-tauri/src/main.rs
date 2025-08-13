@@ -90,14 +90,12 @@ impl AppState {
 }
 
 fn main() -> Result<()> {
-    // before parsing args, attach a console on windows - will fail if not started from a shell, but that's fine
+    // before parsing args, attach a console on windows
+    // will fail if not started from a shell, but that's fine
     #[cfg(windows)]
-    {
-        windows::reattach_console();
-    }
+    windows::reattach_console();
 
     let args = Args::parse();
-
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
@@ -116,18 +114,16 @@ fn main() -> Result<()> {
                 .level(LevelFilter::Warn)
                 .level_for(
                     "vizjj",
-                    if args.debug {
-                        LevelFilter::Debug
-                    } else {
-                        LevelFilter::Warn
+                    match args.debug {
+                        true => LevelFilter::Debug,
+                        false => LevelFilter::Warn,
                     },
                 )
                 .level_for(
                     "tao",
-                    if args.debug {
-                        LevelFilter::Info
-                    } else {
-                        LevelFilter::Error
+                    match args.debug {
+                        true => LevelFilter::Info,
+                        false => LevelFilter::Error,
                     },
                 )
                 .build(),
@@ -176,15 +172,14 @@ fn main() -> Result<()> {
             let mut handle = window.as_ref().window();
             let window_worker = thread::spawn(move || {
                 log::info!("start worker");
-
                 while let Err(err) =
                     WorkerSession::new(FrontendCallbacks(handle.clone()), args.workspace.clone())
                         .handle_events(&receiver)
                         .context("worker")
                 {
                     log::info!("restart worker: {err:#}");
-
-                    // it's ok if the worker has to restart, as long as we can notify the frontend of it
+                    // it's ok if the worker has to restart,
+                    // as long as we can notify the frontend of it
                     handler::fatal!(handle.emit(
                         "vizjj://repo/config",
                         messages::RepoConfig::WorkerError {
@@ -255,9 +250,7 @@ fn notify_input(
 
 #[tauri::command]
 fn forward_accelerator(window: Window, key: char) {
-    if key == 'o' {
-        menu::repo_open(&window);
-    }
+    (key == 'o').then(|| menu::repo_open(&window));
 }
 
 #[tauri::command]
