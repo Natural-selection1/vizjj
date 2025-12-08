@@ -12,7 +12,7 @@ frontendDist = "../dist"
 [[app.windows]]
 label = "main"
 title = "vizjj - Gui for JJ"
-decorations = true
+decorations = false
 resizable = true
 focus = true
 width = 1280

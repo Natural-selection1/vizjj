@@ -18,9 +18,10 @@ use clap::Parser;
 use jj_lib::config::ConfigSource;
 use log::LevelFilter;
 use tauri::menu::Menu;
-use tauri::{Emitter, Listener, State, Window, WindowEvent, Wry};
+use tauri::{Emitter, State, Window, WindowEvent, Wry};
 use tauri::{Manager, ipc::InvokeError};
 use tauri_plugin_window_state::StateFlags;
+#[cfg(windows)]
 use windows::Win32::System::Console::{ATTACH_PARENT_PROCESS, AttachConsole};
 
 use messages::{
@@ -162,8 +163,9 @@ fn main() -> Result<()> {
             open_workspace_at_path,
             open_file_in_explorer,
             open_file_with_default_app,
+            menu_repo_open,
+            menu_repo_reopen,
         ])
-        .menu(menu::build_main)
         .setup(|app| {
             let window = app
                 .get_webview_window("main")
@@ -194,17 +196,6 @@ fn main() -> Result<()> {
 
             handle = window.as_ref().window();
             window.on_window_event(move |event| handle_window_event(&handle, event));
-
-            handle = window.as_ref().window();
-            window.listen("vizjj://revision/select", move |event| {
-                let payload: Result<Option<messages::RevHeader>, serde_json::Error> =
-                    serde_json::from_str(event.payload());
-                if let Some(menu) = handle.menu()
-                    && let Ok(selection) = payload
-                {
-                    handler::fatal!(menu::handle_selection(menu, selection));
-                }
-            });
 
             let (revision_menu, tree_menu, ref_menu) = menu::build_context(app.handle())?;
 
@@ -532,24 +523,17 @@ fn try_open_repository(window: &Window, cwd: Option<PathBuf>) -> Result<()> {
     match call_rx.recv()? {
         Ok(config) => {
             log::debug!("load workspace succeeded");
-            match &config {
-                messages::RepoConfig::Workspace { absolute_path, .. } => {
-                    let repo_path = absolute_path.0.clone();
-                    window.set_title((String::from("vizjj - ") + repo_path.as_str()).as_str())?;
-                    {
-                        let window = window.clone();
-                        thread::spawn(move || {
-                            handler::nonfatal!(add_recent_workspaces(window, &repo_path));
-                        });
-                    }
-                }
-                _ => window.set_title("vizjj - Gui for JJ")?,
+            if let messages::RepoConfig::Workspace { absolute_path, .. } = &config {
+                let repo_path = absolute_path.0.clone();
+                let window = window.clone();
+                thread::spawn(move || {
+                    handler::nonfatal!(add_recent_workspaces(window, &repo_path));
+                });
             }
             window.emit("vizjj://repo/config", config)?;
         }
         Err(err) => {
             log::warn!("load workspace failed: {err}");
-            window.set_title("vizjj - Gui for JJ")?;
             window.emit(
                 "vizjj://repo/config",
                 messages::RepoConfig::LoadError {
@@ -678,4 +662,13 @@ fn open_file_in_explorer(file_path: String) -> Result<(), InvokeError> {
 fn open_file_with_default_app(file_path: String) -> Result<(), InvokeError> {
     opener::open(&file_path).map_err(|e| InvokeError::from_anyhow(e.into()))?;
     Ok(())
+}
+#[tauri::command]
+fn menu_repo_open(window: Window) {
+    menu::repo_open(&window);
+}
+
+#[tauri::command]
+fn menu_repo_reopen(window: Window) {
+    menu::repo_reopen(&window);
 }

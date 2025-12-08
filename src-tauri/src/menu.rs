@@ -1,157 +1,14 @@
-use anyhow::{Context, Result, anyhow};
-#[cfg(target_os = "macos")]
-use tauri::menu::AboutMetadata;
+use anyhow::{Context, Result};
 use tauri::{
     AppHandle, Emitter, Manager, Window, Wry,
-    menu::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu},
+    menu::{Menu, MenuItem, PredefinedMenuItem},
 };
 use tauri_plugin_dialog::{DialogExt, FilePath};
 
 use crate::{
     AppState, handler,
-    messages::{Operand, RevHeader, StoreRef},
+    messages::{Operand, StoreRef},
 };
-
-pub fn build_main(app_handle: &AppHandle) -> tauri::Result<Menu<Wry>> {
-    #[cfg(target_os = "macos")]
-    let pkg_info = app_handle.package_info();
-    #[cfg(target_os = "macos")]
-    let config = app_handle.config();
-    #[cfg(target_os = "macos")]
-    let about_metadata = AboutMetadata {
-        name: Some("vizjj".into()),
-        version: Some(pkg_info.version.to_string()),
-        copyright: config.bundle.copyright.clone(),
-        authors: config.bundle.publisher.clone().map(|p| vec![p]),
-        ..Default::default()
-    };
-
-    let repo_menu = Submenu::with_items(
-        app_handle,
-        "Repository",
-        true,
-        &[
-            &MenuItem::with_id(
-                app_handle,
-                "menu_repo_open",
-                "Open...",
-                true,
-                Some("cmdorctrl+o"),
-            )?,
-            &MenuItem::with_id(app_handle, "menu_repo_reopen", "Reopen", true, Some("f5"))?,
-            &PredefinedMenuItem::close_window(app_handle, Some("Close"))?,
-        ],
-    )?;
-
-    let revision_menu = Submenu::with_id_and_items(
-        app_handle,
-        "revision",
-        "Revision",
-        true,
-        &[
-            &MenuItem::with_id(
-                app_handle,
-                "menu_revision_new",
-                "New child",
-                true,
-                Some("cmdorctrl+n"),
-            )?,
-            &MenuItem::with_id(
-                app_handle,
-                "menu_revision_edit",
-                "Edit as working copy",
-                true,
-                None::<&str>,
-            )?,
-            &MenuItem::with_id(
-                app_handle,
-                "menu_revision_backout",
-                "Backout into working copy",
-                true,
-                None::<&str>,
-            )?,
-            &MenuItem::with_id(
-                app_handle,
-                "menu_revision_duplicate",
-                "Duplicate",
-                true,
-                None::<&str>,
-            )?,
-            &MenuItem::with_id(
-                app_handle,
-                "menu_revision_abandon",
-                "Abandon",
-                true,
-                None::<&str>,
-            )?,
-            &PredefinedMenuItem::separator(app_handle)?,
-            &MenuItem::with_id(
-                app_handle,
-                "menu_revision_squash",
-                "Squash into parent",
-                true,
-                None::<&str>,
-            )?,
-            &MenuItem::with_id(
-                app_handle,
-                "menu_revision_restore",
-                "Restore from parent",
-                true,
-                None::<&str>,
-            )?,
-            &PredefinedMenuItem::separator(app_handle)?,
-            &MenuItem::with_id(
-                app_handle,
-                "menu_revision_branch",
-                "Create bookmark",
-                true,
-                None::<&str>,
-            )?,
-        ],
-    )?;
-
-    let edit_menu = Submenu::with_items(
-        app_handle,
-        "Edit",
-        true,
-        &[
-            &PredefinedMenuItem::undo(app_handle, None)?,
-            &PredefinedMenuItem::redo(app_handle, None)?,
-            &PredefinedMenuItem::separator(app_handle)?,
-            &PredefinedMenuItem::cut(app_handle, None)?,
-            &PredefinedMenuItem::copy(app_handle, None)?,
-            &PredefinedMenuItem::paste(app_handle, None)?,
-            &PredefinedMenuItem::select_all(app_handle, None)?,
-        ],
-    )?;
-
-    let menu = Menu::with_items(
-        app_handle,
-        &[
-            #[cfg(target_os = "macos")]
-            &Submenu::with_items(
-                app_handle,
-                pkg_info.name.clone(),
-                true,
-                &[
-                    &PredefinedMenuItem::about(app_handle, None, Some(about_metadata))?,
-                    &PredefinedMenuItem::separator(app_handle)?,
-                    &PredefinedMenuItem::services(app_handle, None)?,
-                    &PredefinedMenuItem::separator(app_handle)?,
-                    &PredefinedMenuItem::hide(app_handle, None)?,
-                    &PredefinedMenuItem::hide_others(app_handle, None)?,
-                    &PredefinedMenuItem::separator(app_handle)?,
-                    &PredefinedMenuItem::quit(app_handle, None)?,
-                ],
-            )?,
-            &repo_menu,
-            &revision_menu,
-            &edit_menu,
-        ],
-    )?;
-
-    Ok(menu)
-}
 
 #[allow(clippy::type_complexity)]
 pub fn build_context(
@@ -295,46 +152,6 @@ pub fn build_context(
     Ok((revision_menu, tree_menu, ref_menu))
 }
 
-// enables global menu items based on currently selected revision
-pub fn handle_selection(menu: Menu<Wry>, selection: Option<RevHeader>) -> Result<()> {
-    let revision_submenu = menu
-        .get("revision")
-        .ok_or(anyhow!("Revision menu not found"))?;
-    let revision_submenu = revision_submenu.as_submenu_unchecked();
-
-    match selection {
-        None => {
-            revision_submenu.enable("menu_revision_new", false)?;
-            revision_submenu.enable("menu_revision_edit", false)?;
-            revision_submenu.enable("menu_revision_duplicate", false)?;
-            revision_submenu.enable("menu_revision_abandon", false)?;
-            revision_submenu.enable("menu_revision_squash", false)?;
-            revision_submenu.enable("menu_revision_restore", false)?;
-        }
-        Some(rev) => {
-            revision_submenu.enable("menu_revision_new", true)?;
-            revision_submenu.enable(
-                "menu_revision_edit",
-                !rev.is_immutable && !rev.is_working_copy,
-            )?;
-            revision_submenu.enable("menu_revision_backout", true)?;
-            revision_submenu.enable("menu_revision_duplicate", true)?;
-            revision_submenu.enable("menu_revision_abandon", !rev.is_immutable)?;
-            revision_submenu.enable(
-                "menu_revision_squash",
-                !rev.is_immutable && rev.parent_ids.len() == 1,
-            )?;
-            revision_submenu.enable(
-                "menu_revision_restore",
-                !rev.is_immutable && rev.parent_ids.len() == 1,
-            )?;
-            revision_submenu.enable("menu_revision_branch", true)?;
-        }
-    };
-
-    Ok(())
-}
-
 // enables context menu items for a revision and shows the menu
 pub fn handle_context(window: Window, ctx: Operand) -> Result<()> {
     log::debug!("handling context {ctx:?}");
@@ -467,20 +284,10 @@ pub fn handle_context(window: Window, ctx: Operand) -> Result<()> {
     Ok(())
 }
 
-pub fn handle_event(window: &Window, event: MenuEvent) -> Result<()> {
+pub fn handle_event(window: &Window, event: tauri::menu::MenuEvent) -> Result<()> {
     log::debug!("handling event {event:?}");
 
     match event.id.0.as_str() {
-        "menu_repo_open" => repo_open(window),
-        "menu_repo_reopen" => repo_reopen(window),
-        "menu_revision_new" => window.emit("vizjj://menu/revision", "new")?,
-        "menu_revision_edit" => window.emit("vizjj://menu/revision", "edit")?,
-        "menu_revision_backout" => window.emit("vizjj://menu/revision", "backout")?,
-        "menu_revision_duplicate" => window.emit("vizjj://menu/revision", "duplicate")?,
-        "menu_revision_abandon" => window.emit("vizjj://menu/revision", "abandon")?,
-        "menu_revision_squash" => window.emit("vizjj://menu/revision", "squash")?,
-        "menu_revision_restore" => window.emit("vizjj://menu/revision", "restore")?,
-        "menu_revision_branch" => window.emit("vizjj://menu/revision", "branch")?,
         "revision_new" => window.emit("vizjj://context/revision", "new")?,
         "revision_edit" => window.emit("vizjj://context/revision", "edit")?,
         "revision_backout" => window.emit("vizjj://context/revision", "backout")?,
@@ -522,7 +329,7 @@ pub fn repo_open(window: &Window) {
     });
 }
 
-fn repo_reopen(window: &Window) {
+pub fn repo_reopen(window: &Window) {
     handler::fatal!(crate::try_open_repository(window, None).context("try_open_repository"));
 }
 
@@ -531,15 +338,6 @@ trait Enabler {
 }
 
 impl Enabler for Menu<Wry> {
-    fn enable(&self, id: &str, value: bool) -> tauri::Result<()> {
-        match self.get(id).as_ref().and_then(|item| item.as_menuitem()) {
-            Some(item) => item.set_enabled(value),
-            None => Ok(()),
-        }
-    }
-}
-
-impl Enabler for Submenu<Wry> {
     fn enable(&self, id: &str, value: bool) -> tauri::Result<()> {
         match self.get(id).as_ref().and_then(|item| item.as_menuitem()) {
             Some(item) => item.set_enabled(value),

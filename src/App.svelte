@@ -22,6 +22,7 @@
     import RecentWorkspaces from "./shell/RecentWorkspaces.svelte";
     import type Settings from "./shell/Settings";
     import StatusBar from "./shell/StatusBar.svelte";
+    import TitleBar from "./shell/TitleBar.svelte";
     import {
         currentContext,
         currentInput,
@@ -198,6 +199,9 @@
             id="shell"
             bind:this={shellElement}
             style="--left-width: {leftPanelWidth}%; --right-width: {100 - leftPanelWidth}%;">
+            <div style="grid-area: titlebar">
+                <TitleBar {selection} />
+            </div>
             {#if $repoConfigEvent.type == "Initial"}
                 <Pane>{#snippet header()}<h2>Loading...</h2>{/snippet}</Pane>
                 <div class="separator"></div>
@@ -272,7 +276,7 @@
                 </ModalOverlay>
             {/if}
 
-            <div class="separator" style="grid-area: 2/1/3/4"></div>
+            <div class="separator" style="grid-area: 3/1/4/4"></div>
 
             <StatusBar {target} />
 
@@ -325,8 +329,9 @@
         user-select: none;
         overflow: hidden;
         grid-template-columns: var(--left-width) 4px var(--right-width);
-        grid-template-rows: 1fr 3px 30px;
+        grid-template-rows: 30px 1fr 3px 30px;
         grid-template-areas:
+            "titlebar titlebar titlebar"
             "content content content"
             ". . ."
             "footer footer footer";
