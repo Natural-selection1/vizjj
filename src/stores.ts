@@ -31,6 +31,8 @@ export const currentInput = writable<
     (InputRequest & { callback: (response: InputResponse) => void }) | null
 >();
 
+export const contextMenuEvent = writable<{ operand: Operand; x: number; y: number } | null>(null);
+
 export const hasModal = writable<boolean>(false);
 
 export const currentTheme = writable<"light" | "dark">("light");

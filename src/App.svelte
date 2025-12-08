@@ -23,10 +23,12 @@
     import type Settings from "./shell/Settings";
     import StatusBar from "./shell/StatusBar.svelte";
     import TitleBar from "./shell/TitleBar.svelte";
+    import ContextMenu from "./shell/ContextMenu.svelte";
     import {
         currentContext,
         currentInput,
         currentMutation,
+        contextMenuEvent,
         repoConfigEvent,
         repoStatusEvent,
         revisionSelectEvent,
@@ -49,7 +51,14 @@
         }
     });
 
-    document.body.addEventListener("click", () => currentContext.set(null), true);
+    document.body.addEventListener(
+        "click",
+        (e) => {
+            if ((e.target as Element)?.closest(".context-menu")) return;
+            currentContext.set(null);
+        },
+        true
+    );
 
     // this is a special case - most triggers are fire-and-forget, but we really need a
     // vizjj://repo/config event in response to this one. if it takes too long, we make our own
@@ -279,6 +288,14 @@
             <div class="separator" style="grid-area: 3/1/4/4"></div>
 
             <StatusBar {target} />
+
+            {#if $contextMenuEvent}
+                <ContextMenu
+                    operand={$contextMenuEvent.operand}
+                    x={$contextMenuEvent.x}
+                    y={$contextMenuEvent.y}
+                    onClose={() => contextMenuEvent.set(null)} />
+            {/if}
 
             {#if $currentInput}
                 <ModalOverlay>

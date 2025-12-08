@@ -3,7 +3,6 @@
 mod callbacks;
 mod config;
 mod handler;
-mod menu;
 mod messages;
 mod worker;
 
@@ -17,9 +16,9 @@ use anyhow::{Context, Result, anyhow};
 use clap::Parser;
 use jj_lib::config::ConfigSource;
 use log::LevelFilter;
-use tauri::menu::Menu;
-use tauri::{Emitter, State, Window, WindowEvent, Wry};
+use tauri::{Emitter, State, Window, WindowEvent};
 use tauri::{Manager, ipc::InvokeError};
+use tauri_plugin_dialog::{DialogExt, FilePath};
 use tauri_plugin_window_state::StateFlags;
 #[cfg(windows)]
 use windows::Win32::System::Console::{ATTACH_PARENT_PROCESS, AttachConsole};
@@ -53,9 +52,6 @@ struct WindowState {
     _worker: JoinHandle<()>,
     worker_channel: Sender<SessionEvent>,
     input_channel: Option<Sender<InputResponse>>,
-    revision_menu: Menu<Wry>,
-    tree_menu: Menu<Wry>,
-    ref_menu: Menu<Wry>,
 }
 
 impl AppState {
@@ -134,7 +130,6 @@ fn main() -> Result<()> {
             notify_window_ready,
             notify_input,
             forward_accelerator,
-            forward_context_menu,
             query_log,
             query_log_next_page,
             query_revision,
@@ -192,12 +187,8 @@ fn main() -> Result<()> {
                 }
             });
 
-            window.on_menu_event(|w, e| handler::fatal!(menu::handle_event(w, e)));
-
             handle = window.as_ref().window();
             window.on_window_event(move |event| handle_window_event(&handle, event));
-
-            let (revision_menu, tree_menu, ref_menu) = menu::build_context(app.handle())?;
 
             let app_state = app.state::<AppState>();
             app_state.0.lock().unwrap().insert(
@@ -206,9 +197,6 @@ fn main() -> Result<()> {
                     _worker: window_worker,
                     worker_channel: sender,
                     input_channel: None,
-                    revision_menu,
-                    tree_menu,
-                    ref_menu,
                 },
             );
 
@@ -242,13 +230,7 @@ fn notify_input(
 
 #[tauri::command]
 fn forward_accelerator(window: Window, key: char) {
-    (key == 'o').then(|| menu::repo_open(&window));
-}
-
-#[tauri::command]
-fn forward_context_menu(window: Window, context: messages::Operand) -> Result<(), InvokeError> {
-    menu::handle_context(window, context).map_err(InvokeError::from_anyhow)?;
-    Ok(())
+    (key == 'o').then(|| open_repo(&window));
 }
 
 #[tauri::command(async)]
@@ -663,12 +645,24 @@ fn open_file_with_default_app(file_path: String) -> Result<(), InvokeError> {
     opener::open(&file_path).map_err(|e| InvokeError::from_anyhow(e.into()))?;
     Ok(())
 }
+
 #[tauri::command]
 fn menu_repo_open(window: Window) {
-    menu::repo_open(&window);
+    open_repo(&window);
 }
 
 #[tauri::command]
 fn menu_repo_reopen(window: Window) {
-    menu::repo_reopen(&window);
+    handler::fatal!(crate::try_open_repository(&window, None).context("try_open_repository"));
+}
+
+fn open_repo(window: &Window) {
+    let window = window.clone();
+    window.dialog().file().pick_folder(move |picked| {
+        if let Some(FilePath::Path(cwd)) = picked {
+            handler::fatal!(
+                crate::try_open_repository(&window, Some(cwd)).context("try_open_repository")
+            );
+        }
+    });
 }

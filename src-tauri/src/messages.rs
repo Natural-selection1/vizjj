@@ -133,6 +133,7 @@ impl StoreRef {
 #[serde(tag = "type")]
 #[ts(export, export_to = "../../src/messages/")]
 #[allow(clippy::large_enum_variant)]
+#[allow(dead_code, reason = "used by frontend")]
 pub enum Operand {
     Repository,
     Revision {
