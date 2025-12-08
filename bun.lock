@@ -7,6 +7,7 @@
         "@catppuccin/palette": "^1.0.3",
         "@tailwindcss/vite": "4.1.11",
         "@tauri-apps/api": "^2.0.0-beta.0",
+        "@tauri-apps/plugin-log": "~2",
         "@tauri-apps/plugin-shell": "^2.0.0-beta.0",
         "feather-icons": "^4.29.1",
         "gitmojis": "^3.15.0",
@@ -204,6 +205,8 @@
     "@tauri-apps/cli-win32-ia32-msvc": ["@tauri-apps/cli-win32-ia32-msvc@2.6.2", "https://registry.npmmirror.com/@tauri-apps/cli-win32-ia32-msvc/-/cli-win32-ia32-msvc-2.6.2.tgz", { "os": "win32", "cpu": "ia32" }, "sha512-TmD8BbzbjluBw8+QEIWUVmFa9aAluSkT1N937n1mpYLXcPbTpbunqRFiIznTwupoJNJIdtpF/t7BdZDRh5rrcg=="],
 
     "@tauri-apps/cli-win32-x64-msvc": ["@tauri-apps/cli-win32-x64-msvc@2.6.2", "https://registry.npmmirror.com/@tauri-apps/cli-win32-x64-msvc/-/cli-win32-x64-msvc-2.6.2.tgz", { "os": "win32", "cpu": "x64" }, "sha512-ItB8RCKk+nCmqOxOvbNtltz6x1A4QX6cSM21kj3NkpcnjT9rHSMcfyf8WVI2fkoMUJR80iqCblUX6ARxC3lj6w=="],
+
+    "@tauri-apps/plugin-log": ["@tauri-apps/plugin-log@2.7.1", "https://registry.npmmirror.com/@tauri-apps/plugin-log/-/plugin-log-2.7.1.tgz", { "dependencies": { "@tauri-apps/api": "^2.8.0" } }, "sha512-jdb+o0wxQc8PjnLktgGpOs9Dh1YupaOGDXzO+Y8peA1UZ1ep3eXv4E1oiJ7nIQVN0XUFDDhnn3aBszl8ijhR+A=="],
 
     "@tauri-apps/plugin-shell": ["@tauri-apps/plugin-shell@2.3.0", "https://registry.npmmirror.com/@tauri-apps/plugin-shell/-/plugin-shell-2.3.0.tgz", { "dependencies": { "@tauri-apps/api": "^2.6.0" } }, "sha512-6GIRxO2z64uxPX4CCTuhQzefvCC0ew7HjdBhMALiGw74vFBDY95VWueAHOHgNOMV4UOUAFupyidN9YulTe5xlA=="],
 
@@ -424,5 +427,7 @@
     "@tailwindcss/oxide-wasm32-wasi/@tybys/wasm-util": ["@tybys/wasm-util@0.9.0", "https://registry.npmmirror.com/@tybys/wasm-util/-/wasm-util-0.9.0.tgz", { "dependencies": { "tslib": "^2.4.0" }, "bundled": true }, "sha512-6+7nlbMVX/PVDCwaIQ8nTOPveOcFLSt8GcXdx8hD0bt39uWxYT88uXzqTd4fTvqta7oeUJqudepapKNt2DYJFw=="],
 
     "@tailwindcss/oxide-wasm32-wasi/tslib": ["tslib@2.8.0", "https://registry.npmmirror.com/tslib/-/tslib-2.8.0.tgz", { "bundled": true }, "sha512-jWVzBLplnCmoaTr13V9dYbiQ99wvZRd0vNWaDRg+aVYRcjDF3nDksxFDE/+fkXnKhpnUUkmx5pK/v8mCtLVqZA=="],
+
+    "@tauri-apps/plugin-log/@tauri-apps/api": ["@tauri-apps/api@2.9.1", "https://registry.npmmirror.com/@tauri-apps/api/-/api-2.9.1.tgz", {}, "sha512-IGlhP6EivjXHepbBic618GOmiWe4URJiIeZFlB7x3czM0yDHHYviH1Xvoiv4FefdkQtn6v7TuwWCRfOGdnVUGw=="],
   }
 }
