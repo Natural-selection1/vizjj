@@ -5,4 +5,4 @@ package-lock.json
 
 # backend
 src-tauri/gen
-src-tauri/targets
+src-tauri/target

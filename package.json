@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "tauri": "tauri",
-    "gen": "cd src-tauri && cargo test -F ts-rs && bun run fmt",
+    "gen": "cd src-tauri && cargo test export_bindings && bun run fmt",
     "test": "cd src-tauri && cargo test",
     "fix": "bun run fmt && bun run clippy",
     "fmt": "bun run fmt:frontend && bun run fmt:backend",

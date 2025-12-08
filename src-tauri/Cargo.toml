@@ -62,12 +62,12 @@ git2 = { version = "0.20.1", features = ["vendored-libgit2"] }
 
 # extra deps not used by JJ
 opener = { version = "0.8.2", features = ["reveal"] }
-log = "0.4"
+log = "0.4.29"
 futures-util = "0.3.30"
-ts-rs = { version = "7.1.1", features = ["chrono-impl"], optional = true }
+ts-rs = { version = "11.1.0", features = ["chrono-impl"] }
 
 [target."cfg(windows)".dependencies]
-windows = { version = "0.54.0", features = [
+windows = { version = "0.62.2", features = [
     "Win32_Foundation",
     "Win32_System_Com",
     "Win32_System_Com_StructuredStorage",

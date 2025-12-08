@@ -3,6 +3,9 @@ import type { MultilineString } from "./MultilineString";
 import type { RepoStatus } from "./RepoStatus";
 import type { RevHeader } from "./RevHeader";
 
+/**
+ * Common result type for mutating commands
+ */
 export type MutationResult =
     | { type: "Unchanged" }
     | { type: "Updated"; new_status: RepoStatus }

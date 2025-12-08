@@ -2,7 +2,8 @@
 import type { ChangeId } from "./ChangeId";
 import type { CommitId } from "./CommitId";
 
-export interface RevId {
-    change: ChangeId;
-    commit: CommitId;
-}
+/**
+ * A pair of ids representing the ui's view of a revision.
+ * The worker may use one or both depending on policy.
+ */
+export type RevId = { change: ChangeId; commit: CommitId };

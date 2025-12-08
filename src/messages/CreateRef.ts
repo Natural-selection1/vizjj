@@ -2,7 +2,4 @@
 import type { RevId } from "./RevId";
 import type { StoreRef } from "./StoreRef";
 
-export interface CreateRef {
-    id: RevId;
-    ref: StoreRef;
-}
+export type CreateRef = { id: RevId; ref: StoreRef };

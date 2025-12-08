@@ -10,16 +10,11 @@ use std::{collections::HashMap, path::Path};
 
 use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ts-rs")]
 use ts_rs::TS;
 
 /// Utility type used to abstract crlf/<br>/etc
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[cfg_attr(
-    feature = "ts-rs",
-    derive(TS),
-    ts(export, export_to = "../src/messages/")
-)]
+#[derive(Serialize, Deserialize, Clone, Debug, TS)]
+#[ts(export, export_to = "../../src/messages/")]
 pub struct MultilineString {
     pub lines: Vec<String>,
 }
@@ -36,12 +31,8 @@ where
 }
 
 /// Utility type used for platform-specific display
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[cfg_attr(
-    feature = "ts-rs",
-    derive(TS),
-    ts(export, export_to = "../src/messages/")
-)]
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+#[ts(export, export_to = "../../src/messages/")]
 pub struct DisplayPath(pub String);
 
 impl<T: AsRef<Path>> From<T> for DisplayPath {
@@ -55,24 +46,16 @@ impl<T: AsRef<Path>> From<T> for DisplayPath {
 }
 
 /// Utility type used for round-tripping
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[cfg_attr(
-    feature = "ts-rs",
-    derive(TS),
-    ts(export, export_to = "../src/messages/")
-)]
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+#[ts(export, export_to = "../../src/messages/")]
 pub struct TreePath {
     pub repo_path: String,
     pub relative_path: DisplayPath,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, TS)]
 #[serde(tag = "type")]
-#[cfg_attr(
-    feature = "ts-rs",
-    derive(TS),
-    ts(export, export_to = "../src/messages/")
-)]
+#[ts(export, export_to = "../../src/messages/")]
 pub enum RepoConfig {
     #[allow(dead_code, reason = "used by frontend")]
     Initial,
@@ -97,25 +80,17 @@ pub enum RepoConfig {
     },
 }
 
-#[derive(Serialize, Clone, Debug)]
-#[cfg_attr(
-    feature = "ts-rs",
-    derive(TS),
-    ts(export, export_to = "../src/messages/")
-)]
+#[derive(Serialize, Clone, Debug, TS)]
+#[ts(export, export_to = "../../src/messages/")]
 pub struct RepoStatus {
     pub operation_description: String,
     pub working_copy: CommitId,
 }
 
 /// Bookmark or tag name with metadata.
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, TS)]
 #[serde(tag = "type")]
-#[cfg_attr(
-    feature = "ts-rs",
-    derive(TS),
-    ts(export, export_to = "../src/messages/")
-)]
+#[ts(export, export_to = "../../src/messages/")]
 pub enum StoreRef {
     LocalBookmark {
         branch_name: String,
@@ -154,13 +129,9 @@ impl StoreRef {
 }
 
 /// Refers to one of the repository's manipulatable objects
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
 #[serde(tag = "type")]
-#[cfg_attr(
-    feature = "ts-rs",
-    derive(TS),
-    ts(export, export_to = "../src/messages/")
-)]
+#[ts(export, export_to = "../../src/messages/")]
 #[allow(clippy::large_enum_variant)]
 pub enum Operand {
     Repository,
@@ -184,35 +155,23 @@ pub enum Operand {
     },
 }
 
-#[derive(Serialize, Debug, Clone)]
-#[cfg_attr(
-    feature = "ts-rs",
-    derive(TS),
-    ts(export, export_to = "../src/messages/")
-)]
+#[derive(Serialize, Debug, Clone, TS)]
+#[ts(export, export_to = "../../src/messages/")]
 pub struct InputRequest {
     pub title: String,
     pub detail: String,
     pub fields: Vec<InputField>,
 }
 
-#[derive(Deserialize, Debug)]
-#[cfg_attr(
-    feature = "ts-rs",
-    derive(TS),
-    ts(export, export_to = "../src/messages/")
-)]
+#[derive(Deserialize, Debug, TS)]
+#[ts(export, export_to = "../../src/messages/")]
 pub struct InputResponse {
     pub cancel: bool,
     pub fields: HashMap<String, String>,
 }
 
-#[derive(Serialize, Debug, Clone)]
-#[cfg_attr(
-    feature = "ts-rs",
-    derive(TS),
-    ts(export, export_to = "../src/messages/")
-)]
+#[derive(Serialize, Debug, Clone, TS)]
+#[ts(export, export_to = "../../src/messages/")]
 pub struct InputField {
     pub label: String,
     pub choices: Vec<String>,

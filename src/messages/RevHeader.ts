@@ -5,7 +5,7 @@ import type { RevAuthor } from "./RevAuthor";
 import type { RevId } from "./RevId";
 import type { StoreRef } from "./StoreRef";
 
-export interface RevHeader {
+export type RevHeader = {
     id: RevId;
     description: MultilineString;
     author: RevAuthor;
@@ -14,4 +14,4 @@ export interface RevHeader {
     is_immutable: boolean;
     refs: Array<StoreRef>;
     parent_ids: Array<CommitId>;
-}
+};

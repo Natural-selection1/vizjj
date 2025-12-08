@@ -2,7 +2,4 @@
 import type { HunkLocation } from "./HunkLocation";
 import type { MultilineString } from "./MultilineString";
 
-export interface ChangeHunk {
-    location: HunkLocation;
-    lines: MultilineString;
-}
+export type ChangeHunk = { location: HunkLocation; lines: MultilineString };

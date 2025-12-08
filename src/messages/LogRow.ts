@@ -3,9 +3,9 @@ import type { LogCoordinates } from "./LogCoordinates";
 import type { LogLine } from "./LogLine";
 import type { RevHeader } from "./RevHeader";
 
-export interface LogRow {
+export type LogRow = {
     revision: RevHeader;
     location: LogCoordinates;
     padding: number;
     lines: Array<LogLine>;
-}
+};

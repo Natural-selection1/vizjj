@@ -3,9 +3,9 @@ import type { ChangeHunk } from "./ChangeHunk";
 import type { ChangeKind } from "./ChangeKind";
 import type { TreePath } from "./TreePath";
 
-export interface RevChange {
+export type RevChange = {
     kind: ChangeKind;
     path: TreePath;
     has_conflict: boolean;
     hunks: Array<ChangeHunk>;
-}
+};

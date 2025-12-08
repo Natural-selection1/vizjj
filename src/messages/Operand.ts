@@ -3,6 +3,9 @@ import type { RevHeader } from "./RevHeader";
 import type { StoreRef } from "./StoreRef";
 import type { TreePath } from "./TreePath";
 
+/**
+ * Refers to one of the repository's manipulatable objects
+ */
 export type Operand =
     | { type: "Repository" }
     | { type: "Revision"; header: RevHeader }
