@@ -76,3 +76,6 @@ windows = { version = "0.62.2", features = [
     "Win32_UI_Shell_Common",
     "Win32_UI_Shell_PropertiesSystem",
 ] }
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-single-instance = "2"

@@ -68,7 +68,7 @@ impl FrontendCallbacks {
 
         // initialise a channel to receive responses
         let (tx, rx) = channel();
-        self.0.state::<AppState>().set_input(self.0.label(), tx);
+        self.0.state::<AppState>().set_input(tx);
 
         // send the request
         match self.0.emit(
