@@ -1,32 +1,35 @@
-use std::{
-    borrow::Borrow,
-    io::Write,
-    iter::{Peekable, Skip},
-    mem,
-    ops::Range,
-};
+use std::{borrow::Borrow, io::Write, mem, ops::Range, pin::Pin};
 
 use anyhow::{Result, anyhow};
 
-use futures_util::{StreamExt, try_join};
+use futures_util::{AsyncReadExt, Stream, StreamExt, try_join};
 use gix::bstr::ByteVec;
 use itertools::Itertools;
-use jj_cli::diff_util::{LineCompareMode, LineDiffOptions};
+use jj_cli::diff_util::LineDiffOptions;
 use jj_lib::{
     backend::CommitId,
-    conflicts::{self, ConflictMarkerStyle, MaterializedFileValue, MaterializedTreeValue},
+    conflict_labels::ConflictLabels,
+    conflicts::{
+        self, ConflictMarkerStyle, ConflictMaterializeOptions, MaterializedFileValue,
+        MaterializedTreeValue,
+    },
     diff::{
         CompareBytesExactly, CompareBytesIgnoreAllWhitespace, CompareBytesIgnoreWhitespaceAmount,
-        Diff, DiffHunk, DiffHunkKind, find_line_ranges,
+        ContentDiff, DiffHunk, DiffHunkKind, find_line_ranges,
     },
-    graph::{GraphEdge, GraphEdgeType, TopoGroupedGraphIterator},
+    diff_presentation::LineCompareMode,
+    files::FileMergeHunkLevel,
+    git_backend::GitBackend,
+    graph::{GraphEdgeType, GraphNode, TopoGroupedGraph},
     matchers::EverythingMatcher,
+    merge::{Diff, SameChange},
     merged_tree::{TreeDiffEntry, TreeDiffStream},
     ref_name::{RefNameBuf, RemoteNameBuf, RemoteRefSymbol},
     repo::Repo,
     repo_path::RepoPath,
     revset::{Revset, RevsetEvaluationError},
     rewrite,
+    tree_merge::MergeOptions,
 };
 use pollster::FutureExt;
 
@@ -70,21 +73,9 @@ pub struct QuerySession<'q, 'w: 'q> {
     pub ws: &'q WorkspaceSession<'w>,
     pub state: QueryState,
     #[allow(clippy::type_complexity)]
-    iter: Peekable<
-        Skip<
-            TopoGroupedGraphIterator<
-                CommitId,
-                Box<
-                    dyn Iterator<
-                            Item = Result<
-                                (CommitId, Vec<GraphEdge<CommitId>>),
-                                RevsetEvaluationError,
-                            >,
-                        > + 'q,
-                >,
-            >,
-        >,
-    >,
+    stream: Pin<Box<dyn Stream<Item = Result<GraphNode<CommitId>, RevsetEvaluationError>> + 'q>>,
+    lookahead: Option<Result<GraphNode<CommitId>, RevsetEvaluationError>>,
+    stream_done: bool,
     #[allow(clippy::type_complexity)]
     is_immutable: Box<dyn Fn(&CommitId) -> Result<bool, RevsetEvaluationError> + 'q>,
 }
@@ -95,18 +86,62 @@ impl<'q, 'w> QuerySession<'q, 'w> {
         revset: &'q dyn Revset,
         state: QueryState,
     ) -> QuerySession<'q, 'w> {
-        let iter = TopoGroupedGraphIterator::new(revset.iter_graph())
-            .skip(state.next_row)
-            .peekable();
+        let as_id: for<'a> fn(&'a CommitId) -> &'a CommitId = commit_id_identity;
+        let mut stream: Pin<Box<dyn Stream<Item = _> + 'q>> =
+            Box::pin(TopoGroupedGraph::new(revset.stream_graph(), as_id).stream());
+        let mut stream_done = false;
+        for _ in 0..state.next_row {
+            if stream.next().block_on().is_none() {
+                stream_done = true;
+                break;
+            }
+        }
 
         let immutable_revset = ws.evaluate_immutable().unwrap();
         let is_immutable = immutable_revset.containing_fn();
 
         QuerySession {
             ws,
-            iter,
+            stream,
+            lookahead: None,
+            stream_done,
             state,
             is_immutable,
+        }
+    }
+
+    fn next_node(&mut self) -> Option<Result<GraphNode<CommitId>, RevsetEvaluationError>> {
+        if let Some(item) = self.lookahead.take() {
+            return Some(item);
+        }
+        if self.stream_done {
+            return None;
+        }
+        match self.stream.next().block_on() {
+            Some(item) => Some(item),
+            None => {
+                self.stream_done = true;
+                None
+            }
+        }
+    }
+
+    fn has_more(&mut self) -> bool {
+        if self.lookahead.is_some() {
+            return true;
+        }
+        if self.stream_done {
+            return false;
+        }
+        match self.stream.next().block_on() {
+            Some(item) => {
+                self.lookahead = Some(item);
+                true
+            }
+            None => {
+                self.stream_done = true;
+                false
+            }
         }
     }
 
@@ -117,7 +152,7 @@ impl<'q, 'w> QuerySession<'q, 'w> {
 
         let root_id = self.ws.repo().store().root_commit_id().clone();
 
-        while let Some(Ok((commit_id, commit_edges))) = self.iter.next() {
+        while let Some(Ok((commit_id, commit_edges))) = self.next_node() {
             // output lines to draw for the current row
             let mut lines: Vec<LogLine> = Vec::new();
 
@@ -262,10 +297,8 @@ impl<'q, 'w> QuerySession<'q, 'w> {
         }
 
         self.state.next_row = row;
-        Ok(LogPage {
-            rows,
-            has_more: self.iter.peek().is_some(),
-        })
+        let has_more = self.has_more();
+        Ok(LogPage { rows, has_more })
     }
 
     fn find_stem_for_commit(&self, id: &CommitId) -> Option<usize> {
@@ -296,22 +329,30 @@ pub fn query_revision(ws: &WorkspaceSession, id: RevId) -> Result<RevResult> {
         None => return Ok(RevResult::NotFound { id }),
     };
 
-    let commit_parents: Result<Vec<_>, _> = commit.parents().collect();
-    let parent_tree = rewrite::merge_commit_trees(ws.repo(), &commit_parents?)?;
-    let tree = commit.tree()?;
+    let commit_parents = commit.parents().block_on()?;
+    let parent_tree = rewrite::merge_commit_trees(ws.repo(), &commit_parents).block_on()?;
+    let tree = commit.tree();
 
     let mut conflicts = Vec::new();
     for (path, entry) in parent_tree.entries() {
         if let Ok(entry) = entry
             && !entry.is_resolved()
         {
-            match conflicts::materialize_tree_value(ws.repo().store(), &path, entry).block_on()? {
+            match conflicts::materialize_tree_value(
+                ws.repo().store(),
+                &path,
+                entry,
+                parent_tree.labels(),
+            )
+            .block_on()?
+            {
                 MaterializedTreeValue::FileConflict(file) => {
                     let mut hunk_content = vec![];
                     conflicts::materialize_merge_result(
                         &file.contents,
-                        ConflictMarkerStyle::default(),
+                        &file.labels,
                         &mut hunk_content,
+                        &conflict_materialize_options(),
                     )?;
                     let mut hunks = get_unified_hunks(3, &hunk_content, &[])?;
                     if let Some(hunk) = hunks.pop() {
@@ -330,15 +371,18 @@ pub fn query_revision(ws: &WorkspaceSession, id: RevId) -> Result<RevResult> {
 
     let mut changes = Vec::new();
     let tree_diff = parent_tree.diff_stream(&tree, &EverythingMatcher);
-    format_tree_changes(ws, &mut changes, tree_diff).block_on()?;
+    let conflict_labels = Diff::new(parent_tree.labels(), tree.labels());
+    format_tree_changes(ws, &mut changes, tree_diff, conflict_labels).block_on()?;
 
     let header = ws.format_header(&commit, None)?;
 
     let parents = commit
         .parents()
-        .map_ok(|p| {
+        .block_on()?
+        .iter()
+        .map(|p| {
             ws.format_header(
-                &p,
+                p,
                 if header.is_immutable {
                     Some(true)
                 } else {
@@ -346,8 +390,6 @@ pub fn query_revision(ws: &WorkspaceSession, id: RevId) -> Result<RevResult> {
                 },
             )
         })
-        .collect::<Result<Vec<_>, _>>()?
-        .into_iter()
         .collect::<Result<Vec<_>, _>>()?;
 
     Ok(RevResult::Detail {
@@ -362,16 +404,10 @@ pub fn query_remotes(
     ws: &WorkspaceSession,
     tracking_branch: Option<String>,
 ) -> Result<Vec<String>> {
-    let git_repo = match ws.git_repo()? {
-        Some(git_repo) => git_repo,
-        None => return Err(anyhow!("No git backend")),
-    };
-
-    let all_remotes: Vec<String> = git_repo
-        .remotes()?
-        .into_iter()
-        .filter_map(|remote| remote.map(|remote| remote.to_owned()))
-        .collect();
+    let all_remotes = ws.git_remote_names();
+    if all_remotes.is_empty() && ws.repo().store().backend_impl::<GitBackend>().is_none() {
+        return Err(anyhow!("No git backend"));
+    }
 
     let matching_remotes = match tracking_branch {
         Some(branch_name) => all_remotes
@@ -397,11 +433,14 @@ async fn format_tree_changes(
     ws: &WorkspaceSession<'_>,
     changes: &mut Vec<RevChange>,
     mut tree_diff: TreeDiffStream<'_>,
+    conflict_labels: Diff<&ConflictLabels>,
 ) -> Result<()> {
     let store = ws.repo().store();
 
     while let Some(TreeDiffEntry { path, values }) = tree_diff.next().await {
-        let (before, after) = values?;
+        let diff = values?;
+        let before = &diff.before;
+        let after = &diff.after;
 
         let kind = if before.is_present() && after.is_present() {
             ChangeKind::Modified
@@ -413,8 +452,10 @@ async fn format_tree_changes(
 
         let has_conflict = !after.is_resolved();
 
-        let before_future = conflicts::materialize_tree_value(store, &path, before);
-        let after_future = conflicts::materialize_tree_value(store, &path, after);
+        let before_future =
+            conflicts::materialize_tree_value(store, &path, before.clone(), conflict_labels.before);
+        let after_future =
+            conflicts::materialize_tree_value(store, &path, after.clone(), conflict_labels.after);
         let (before_value, after_value) = try_join!(before_future, after_future)?;
 
         let hunks = get_value_hunks(3, &path, before_value, after_value)?;
@@ -455,7 +496,7 @@ fn get_value_contents(path: &RepoPath, value: MaterializedTreeValue) -> Result<V
         )),
         MaterializedTreeValue::File(MaterializedFileValue { mut reader, .. }) => {
             let mut contents = vec![];
-            reader.read_to_end(&mut contents)?;
+            reader.read_to_end(&mut contents).block_on()?;
 
             let start = &contents[..8000.min(contents.len())]; // same heuristic git uses
             let is_binary = start.contains(&b'\0');
@@ -471,15 +512,33 @@ fn get_value_contents(path: &RepoPath, value: MaterializedTreeValue) -> Result<V
             let mut hunk_content = vec![];
             conflicts::materialize_merge_result(
                 &file.contents,
-                ConflictMarkerStyle::default(),
+                &file.labels,
                 &mut hunk_content,
+                &conflict_materialize_options(),
             )?;
             Ok(hunk_content)
         }
-        MaterializedTreeValue::OtherConflict { id } => Ok(id.describe().into_bytes()),
+        MaterializedTreeValue::OtherConflict { id, labels } => {
+            Ok(id.describe(&labels).into_bytes())
+        }
         MaterializedTreeValue::Tree(_) => Err(anyhow!("Unexpected tree in diff at path {path:?}")),
         MaterializedTreeValue::AccessDenied(error) => Err(anyhow!(error)),
     }
+}
+
+fn conflict_materialize_options() -> ConflictMaterializeOptions {
+    ConflictMaterializeOptions {
+        marker_style: ConflictMarkerStyle::Git,
+        marker_len: None,
+        merge: MergeOptions {
+            hunk_level: FileMergeHunkLevel::Line,
+            same_change: SameChange::Accept,
+        },
+    }
+}
+
+fn commit_id_identity(commit_id: &CommitId) -> &CommitId {
+    commit_id
 }
 
 fn get_unified_hunks(
@@ -651,7 +710,7 @@ fn unified_diff_hunks<'content>(
             }
             DiffHunkKind::Different => {
                 let (left_lines, right_lines) =
-                    unzip_diff_hunks_to_lines(Diff::by_word(hunk.contents).hunks());
+                    unzip_diff_hunks_to_lines(ContentDiff::by_word(hunk.contents).hunks());
                 current_hunk.extend_removed_lines(left_lines);
                 current_hunk.extend_added_lines(right_lines);
             }
@@ -723,20 +782,20 @@ where
 fn diff_by_line<'input, T: AsRef<[u8]> + ?Sized + 'input>(
     inputs: impl IntoIterator<Item = &'input T>,
     options: &LineDiffOptions,
-) -> Diff<'input> {
+) -> ContentDiff<'input> {
     // TODO: If we add --ignore-blank-lines, its tokenizer will have to attach
     // blank lines to the preceding range. Maybe it can also be implemented as a
     // post-process (similar to refine_changed_regions()) that expands unchanged
     // regions across blank lines.
     match options.compare_mode {
         LineCompareMode::Exact => {
-            Diff::for_tokenizer(inputs, find_line_ranges, CompareBytesExactly)
+            ContentDiff::for_tokenizer(inputs, find_line_ranges, CompareBytesExactly)
         }
         LineCompareMode::IgnoreAllSpace => {
-            Diff::for_tokenizer(inputs, find_line_ranges, CompareBytesIgnoreAllWhitespace)
+            ContentDiff::for_tokenizer(inputs, find_line_ranges, CompareBytesIgnoreAllWhitespace)
         }
         LineCompareMode::IgnoreSpaceChange => {
-            Diff::for_tokenizer(inputs, find_line_ranges, CompareBytesIgnoreWhitespaceAmount)
+            ContentDiff::for_tokenizer(inputs, find_line_ranges, CompareBytesIgnoreWhitespaceAmount)
         }
     }
 }
