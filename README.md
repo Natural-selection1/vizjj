@@ -14,9 +14,12 @@ Use the `.dmg` or `.app.tar.gz` on MacOS, and the `.msi` or `.exe` on Windows.
 
 To compile from source:
 
-1. Install the system dependencies (on Debian-likes, `apt install libpango1.0-dev libatk1.0-dev libgdk-pixbuf2.0-dev libgtk-3-dev libjavascriptcoregtk-4.1-dev libwebkit2gtk-4.1-dev`).
-2. Install the frontend dependencies: `bun install`.
-3. Build the application: `bun run tauri build`.
+1. Install Rust 1.89 or newer and Git 2.41 or newer.
+2. Install the system dependencies (on Debian-likes, `apt install libpango1.0-dev libatk1.0-dev libgdk-pixbuf2.0-dev libgtk-3-dev libjavascriptcoregtk-4.1-dev libwebkit2gtk-4.1-dev`).
+3. Install the frontend dependencies: `bun install`.
+4. Build the application: `bun run tauri build`.
+
+vizjj embeds jj 0.43. Git fetch and push are executed by the system Git installation and use its credential helpers, Git Credential Manager or SSH agent. Interactive terminal prompting is disabled, so authentication failures are reported by vizjj instead of opening an in-app credential dialog.
 
 ### Setup
 
