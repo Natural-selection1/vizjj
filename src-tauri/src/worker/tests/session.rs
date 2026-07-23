@@ -3,7 +3,11 @@ use crate::{
     messages::{LogPage, RepoConfig, RevResult},
     worker::{Session, SessionEvent, WorkerSession},
 };
+#[cfg(windows)]
+use anyhow::Context;
 use anyhow::Result;
+#[cfg(windows)]
+use std::fs;
 use std::{path::PathBuf, sync::mpsc::channel};
 
 #[test]
@@ -362,9 +366,24 @@ fn config_read() -> Result<()> {
 #[test]
 #[cfg(windows)]
 fn config_write() -> Result<()> {
+    use jj_cli::{config::ConfigEnv, ui::Ui};
     use jj_lib::config::ConfigSource;
 
     let repo = mkrepo();
+    let mut config_env = ConfigEnv::from_environment();
+    config_env.reset_repo_path(&repo.path().join(".jj").join("repo"));
+    let config_root = config_env
+        .repo_configs_root_dir()
+        .context("missing secure repo config root")?;
+    let config_path = config_env
+        .repo_config_path(&Ui::null())
+        .map_err(|err| anyhow::anyhow!("{err:?}"))?
+        .context("missing secure repo config path")?;
+    let config_dir = config_path
+        .parent()
+        .context("missing secure repo config directory")?
+        .to_owned();
+    assert!(config_dir.starts_with(&config_root));
 
     let (tx, rx) = channel::<SessionEvent>();
     let (tx_load, rx_load) = channel::<Result<RepoConfig>>();
@@ -391,6 +410,8 @@ fn config_write() -> Result<()> {
     let result = rx_read.recv()??;
 
     assert_eq!(vec!["a".to_string(), "b".to_string()], result);
+    assert!(!repo.path().join(".jj/repo/config.toml").exists());
+    fs::remove_dir_all(config_dir)?;
 
     Ok(())
 }

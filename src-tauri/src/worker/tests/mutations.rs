@@ -1,15 +1,105 @@
 use super::{mkrepo, revs};
 use crate::{
+    config::read_config,
     messages::{
         AbandonRevisions, CheckoutRevision, CopyChanges, CreateRevision, DescribeRevision,
-        DuplicateRevisions, InsertRevision, MoveChanges, MoveSource, MutationResult, RevResult,
-        TreePath,
+        DuplicateRevisions, GitFetch, GitPush, InsertRevision, MoveChanges, MoveSource,
+        MutationResult, RevResult, StoreRef, TreePath,
     },
-    worker::{Mutation, WorkerSession, queries},
+    worker::{Mutation, WorkerCallbacks, WorkerSession, queries},
 };
-use anyhow::Result;
+use anyhow::{Context, Result, bail};
 use assert_matches::assert_matches;
-use std::fs;
+use jj_lib::{
+    git::{GitProgress, GitSidebandLineTerminator, GitSubprocessCallback},
+    object_id::ObjectId,
+    op_store::RefTarget,
+    ref_name::RefNameBuf,
+    workspace::Workspace,
+};
+use pollster::FutureExt;
+use std::{
+    ffi::OsStr,
+    fs, io,
+    path::Path,
+    process::Command,
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
+};
+use tempfile::tempdir;
+
+#[derive(Clone, Default)]
+struct CountingCallbacks {
+    callbacks: Arc<AtomicUsize>,
+    events: Arc<AtomicUsize>,
+}
+
+impl WorkerCallbacks for CountingCallbacks {
+    fn git_subprocess_callback(&self) -> Box<dyn GitSubprocessCallback> {
+        self.callbacks.fetch_add(1, Ordering::Relaxed);
+        Box::new(CountingGitCallback {
+            events: self.events.clone(),
+        })
+    }
+}
+
+struct CountingGitCallback {
+    events: Arc<AtomicUsize>,
+}
+
+impl GitSubprocessCallback for CountingGitCallback {
+    fn needs_progress(&self) -> bool {
+        true
+    }
+
+    fn progress(&mut self, _progress: &GitProgress) -> io::Result<()> {
+        self.events.fetch_add(1, Ordering::Relaxed);
+        Ok(())
+    }
+
+    fn local_sideband(
+        &mut self,
+        _message: &[u8],
+        _term: Option<GitSidebandLineTerminator>,
+    ) -> io::Result<()> {
+        self.events.fetch_add(1, Ordering::Relaxed);
+        Ok(())
+    }
+
+    fn remote_sideband(
+        &mut self,
+        _message: &[u8],
+        _term: Option<GitSidebandLineTerminator>,
+    ) -> io::Result<()> {
+        self.events.fetch_add(1, Ordering::Relaxed);
+        Ok(())
+    }
+}
+
+fn run_git<I, S>(cwd: Option<&Path>, args: I) -> Result<String>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<OsStr>,
+{
+    let mut command = Command::new("git");
+    if let Some(cwd) = cwd {
+        command.current_dir(cwd);
+    }
+    let output = command
+        .args(args)
+        .env("GIT_TERMINAL_PROMPT", "0")
+        .output()
+        .context("run git subprocess")?;
+    if !output.status.success() {
+        bail!(
+            "git subprocess failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    Ok(String::from_utf8(output.stdout)?.trim().to_owned())
+}
 
 #[test]
 fn abandon_revisions() -> Result<()> {
@@ -218,8 +308,119 @@ fn duplicate_revisions() -> Result<()> {
     .execute_unboxed(&mut ws)?;
     assert_matches!(result, MutationResult::UpdatedSelection { .. });
 
-    let page = queries::query_log(&ws, "description(unsynced)", 3)?;
+    let page = queries::query_log(&ws, "description(substring:\"unsynced\")", 3)?;
     assert_eq!(2, page.rows.len());
+
+    Ok(())
+}
+
+#[test]
+fn fetches_and_pushes_with_git_subprocesses() -> Result<()> {
+    let root = tempdir()?;
+    let bare = root.path().join("remote.git");
+    let seed = root.path().join("seed");
+    let checkout = root.path().join("checkout");
+    let bare_arg = bare.to_string_lossy().into_owned();
+    let checkout_arg = checkout.to_string_lossy().into_owned();
+
+    run_git(None, ["init", "--bare", bare_arg.as_str()])?;
+    fs::create_dir(&seed)?;
+    run_git(Some(&seed), ["init"])?;
+    run_git(Some(&seed), ["config", "user.name", "vizjj test"])?;
+    run_git(Some(&seed), ["config", "user.email", "vizjj@example.com"])?;
+    fs::write(seed.join("shared.txt"), "initial\n")?;
+    run_git(Some(&seed), ["add", "shared.txt"])?;
+    run_git(Some(&seed), ["commit", "-m", "initial commit"])?;
+    run_git(Some(&seed), ["branch", "-M", "main"])?;
+    run_git(Some(&seed), ["remote", "add", "origin", bare_arg.as_str()])?;
+    run_git(Some(&seed), ["push", "-u", "origin", "main"])?;
+    run_git(
+        None,
+        [
+            "--git-dir",
+            bare_arg.as_str(),
+            "symbolic-ref",
+            "HEAD",
+            "refs/heads/main",
+        ],
+    )?;
+    run_git(None, ["clone", bare_arg.as_str(), checkout_arg.as_str()])?;
+
+    let (settings, _, _) = read_config(None, None)?;
+    Workspace::init_external_git(&settings, &checkout, &checkout.join(".git")).block_on()?;
+
+    fs::write(seed.join("shared.txt"), "from remote\n")?;
+    run_git(Some(&seed), ["add", "shared.txt"])?;
+    run_git(Some(&seed), ["commit", "-m", "remote commit"])?;
+    run_git(Some(&seed), ["push", "origin", "main"])?;
+    let fetched_head = run_git(Some(&seed), ["rev-parse", "HEAD"])?;
+
+    let callbacks = CountingCallbacks::default();
+    let mut session = WorkerSession::new(callbacks.clone(), None);
+    let mut ws = session.load_directory(&checkout)?;
+    ws.import_and_snapshot(true)?;
+    let result = GitFetch::AllBookmarks {
+        remote_name: "origin".to_owned(),
+    }
+    .execute_unboxed(&mut ws)?;
+    assert_matches!(result, MutationResult::Updated { .. });
+    assert_eq!(1, queries::query_log(&ws, &fetched_head, 1)?.rows.len());
+
+    run_git(Some(&checkout), ["reset", "--hard", "origin/main"])?;
+    fs::write(checkout.join("local.txt"), "pushed by vizjj\n")?;
+    run_git(Some(&checkout), ["add", "local.txt"])?;
+    run_git(
+        Some(&checkout),
+        [
+            "-c",
+            "user.name=vizjj test",
+            "-c",
+            "user.email=vizjj@example.com",
+            "commit",
+            "-m",
+            "local commit",
+        ],
+    )?;
+    let local_head = run_git(Some(&checkout), ["rev-parse", "HEAD"])?;
+    ws.import_and_snapshot(true)?;
+    let imported_head = ws
+        .view()
+        .git_head()
+        .as_normal()
+        .context("missing imported Git HEAD")?
+        .clone();
+    assert_eq!(local_head, imported_head.hex());
+    let mut tx = ws.start_transaction()?;
+    tx.repo_mut()
+        .set_local_bookmark_target(&RefNameBuf::from("main"), RefTarget::normal(imported_head));
+    ws.finish_transaction(tx, "move main to imported git commit".to_owned())?;
+
+    let result = GitPush::RemoteBookmark {
+        remote_name: "origin".to_owned(),
+        branch_ref: StoreRef::LocalBookmark {
+            branch_name: "main".to_owned(),
+            has_conflict: false,
+            is_synced: false,
+            tracking_remotes: vec!["origin".to_owned()],
+            available_remotes: 1,
+            potential_remotes: 1,
+        },
+    }
+    .execute_unboxed(&mut ws)?;
+    assert_matches!(result, MutationResult::Updated { .. });
+
+    let pushed_head = run_git(
+        None,
+        [
+            "--git-dir",
+            bare_arg.as_str(),
+            "rev-parse",
+            "refs/heads/main",
+        ],
+    )?;
+    assert_eq!(local_head, pushed_head);
+    assert_eq!(2, callbacks.callbacks.load(Ordering::Relaxed));
+    assert!(callbacks.events.load(Ordering::Relaxed) > 0);
 
     Ok(())
 }
