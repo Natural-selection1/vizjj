@@ -7,6 +7,7 @@ use jj_cli::{
 };
 use jj_lib::{
     config::{ConfigGetError, ConfigLayer, ConfigNamePathBuf, ConfigSource, StackedConfig},
+    fileset::FilesetAliasesMap,
     revset::RevsetAliasesMap,
     settings::UserSettings,
 };
@@ -65,9 +66,12 @@ impl GGSettings for UserSettings {
     }
 }
 
-pub fn read_config(repo_path: Option<&Path>) -> Result<(UserSettings, RevsetAliasesMap)> {
+pub fn read_config(
+    repo_path: Option<&Path>,
+    workspace_path: Option<&Path>,
+) -> Result<(UserSettings, RevsetAliasesMap, FilesetAliasesMap)> {
     let mut layers = vec![];
-    let mut config_env = ConfigEnv::from_environment(&Ui::null());
+    let mut config_env = ConfigEnv::from_environment();
 
     let jj_default_layers = default_config_layers();
     let vizjj_default_layer =
@@ -76,17 +80,42 @@ pub fn read_config(repo_path: Option<&Path>) -> Result<(UserSettings, RevsetAlia
     layers.push(vizjj_default_layer);
 
     let mut raw_config = config_from_environment(layers);
+    config_env.reload_system_config(&mut raw_config)?;
     config_env.reload_user_config(&mut raw_config)?;
     if let Some(repo_path) = repo_path {
         config_env.reset_repo_path(repo_path);
-        config_env.reload_repo_config(&mut raw_config)?;
+        config_env
+            .reload_repo_config(&Ui::null(), &mut raw_config)
+            .map_err(|err| anyhow!("{err:?}"))?;
     }
+    if let Some(workspace_path) = workspace_path {
+        config_env.reset_workspace_path(workspace_path);
+        config_env
+            .reload_workspace_config(&Ui::null(), &mut raw_config)
+            .map_err(|err| anyhow!("{err:?}"))?;
+    }
+    #[cfg(test)]
+    raw_config.as_mut().add_layer(ConfigLayer::parse(
+        ConfigSource::CommandArg,
+        r#"
+            user.name = "vizjj test"
+            user.email = "vizjj@example.com"
+            revsets.log = "all()"
+
+            [revset-aliases]
+            "immutable_heads()" = "trunk()"
+
+            [remotes.origin]
+            auto-track-bookmarks = "glob:*"
+        "#,
+    )?);
 
     let config = config_env.resolve_config(&raw_config)?;
     let aliases_map = build_aliases_map(&config)?;
+    let fileset_aliases_map = build_fileset_aliases_map(&config)?;
     let settings = UserSettings::from_config(config)?;
 
-    Ok((settings, aliases_map))
+    Ok((settings, aliases_map, fileset_aliases_map))
 }
 
 pub fn build_aliases_map(stacked_config: &StackedConfig) -> Result<RevsetAliasesMap> {
@@ -111,9 +140,42 @@ pub fn build_aliases_map(stacked_config: &StackedConfig) -> Result<RevsetAliases
             let r = item
                 .as_str()
                 .ok_or_else(|| format!("Expected a string, but is {}", item.type_name()))
-                .and_then(|v| aliases_map.insert(decl, v).map_err(|e| e.to_string()));
+                .and_then(|v| aliases_map.insert(decl, v, None).map_err(|e| e.to_string()));
             if let Err(s) = r {
                 return Err(anyhow!("Failed to load `{table_name}.{decl}`: {s}"));
+            }
+        }
+    }
+    Ok(aliases_map)
+}
+
+pub fn build_fileset_aliases_map(stacked_config: &StackedConfig) -> Result<FilesetAliasesMap> {
+    let table_name = ConfigNamePathBuf::from_iter(["fileset-aliases"]);
+    let mut aliases_map = FilesetAliasesMap::new();
+    for layer in stacked_config.layers() {
+        let table = match layer.look_up_table(&table_name) {
+            Ok(Some(table)) => table,
+            Ok(None) => continue,
+            Err(item) => {
+                return Err(ConfigGetError::Type {
+                    name: table_name.to_string(),
+                    error: format!("Expected a table, but is {}", item.type_name()).into(),
+                    source_path: layer.path.clone(),
+                }
+                .into());
+            }
+        };
+        for (decl, item) in table.iter() {
+            let result = item
+                .as_str()
+                .ok_or_else(|| format!("Expected a string, but is {}", item.type_name()))
+                .and_then(|value| {
+                    aliases_map
+                        .insert(decl, value, None)
+                        .map_err(|err| err.to_string())
+                });
+            if let Err(message) = result {
+                return Err(anyhow!("Failed to load `{table_name}.{decl}`: {message}"));
             }
         }
     }

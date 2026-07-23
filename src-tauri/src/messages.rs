@@ -190,6 +190,7 @@ pub enum Operand {
     derive(TS),
     ts(export, export_to = "../src/messages/")
 )]
+#[allow(dead_code)]
 pub struct InputRequest {
     pub title: String,
     pub detail: String,
@@ -202,6 +203,7 @@ pub struct InputRequest {
     derive(TS),
     ts(export, export_to = "../src/messages/")
 )]
+#[allow(dead_code)]
 pub struct InputResponse {
     pub cancel: bool,
     pub fields: HashMap<String, String>,
@@ -213,6 +215,7 @@ pub struct InputResponse {
     derive(TS),
     ts(export, export_to = "../src/messages/")
 )]
+#[allow(dead_code)]
 pub struct InputField {
     pub label: String,
     pub choices: Vec<String>,

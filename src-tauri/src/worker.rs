@@ -11,12 +11,15 @@ mod tests;
 use std::{
     env::{self, VarError},
     fmt::Debug,
-    fs,
+    fs, io,
     path::PathBuf,
 };
 
 use anyhow::{Error, Result, anyhow};
-use jj_lib::{git::RemoteCallbacks, repo::MutableRepo, settings::UserSettings};
+use jj_lib::{
+    git::{GitProgress, GitSidebandLineTerminator, GitSubprocessCallback},
+    settings::UserSettings,
+};
 
 use crate::{config::read_config, messages};
 use gui_util::WorkspaceSession;
@@ -41,22 +44,45 @@ pub trait Mutation: Debug {
 
 /// implemented by UI layers to request user input and receive progress
 pub trait WorkerCallbacks {
-    fn with_git(
-        &self,
-        repo: &mut MutableRepo,
-        f: &dyn Fn(&mut MutableRepo, RemoteCallbacks<'_>) -> Result<()>,
-    ) -> Result<()>;
+    fn git_subprocess_callback(&self) -> Box<dyn GitSubprocessCallback>;
 }
 
 struct NoCallbacks;
 
 impl WorkerCallbacks for NoCallbacks {
-    fn with_git(
-        &self,
-        repo: &mut MutableRepo,
-        f: &dyn Fn(&mut MutableRepo, RemoteCallbacks<'_>) -> Result<()>,
-    ) -> Result<()> {
-        f(repo, RemoteCallbacks::default())
+    fn git_subprocess_callback(&self) -> Box<dyn GitSubprocessCallback> {
+        Box::new(LogGitCallback)
+    }
+}
+
+pub struct LogGitCallback;
+
+impl GitSubprocessCallback for LogGitCallback {
+    fn needs_progress(&self) -> bool {
+        false
+    }
+
+    fn progress(&mut self, progress: &GitProgress) -> io::Result<()> {
+        log::debug!("git progress: {progress:?}");
+        Ok(())
+    }
+
+    fn local_sideband(
+        &mut self,
+        message: &[u8],
+        _term: Option<GitSidebandLineTerminator>,
+    ) -> io::Result<()> {
+        log::info!("git: {}", String::from_utf8_lossy(message));
+        Ok(())
+    }
+
+    fn remote_sideband(
+        &mut self,
+        message: &[u8],
+        _term: Option<GitSidebandLineTerminator>,
+    ) -> io::Result<()> {
+        log::info!("remote: {}", String::from_utf8_lossy(message));
+        Ok(())
     }
 }
 
@@ -72,8 +98,8 @@ pub struct WorkerSession {
 
 impl WorkerSession {
     pub fn new<T: WorkerCallbacks + 'static>(callbacks: T, workspace: Option<PathBuf>) -> Self {
-        let global_settings = match read_config(None) {
-            Ok((settings, _)) => Some(settings),
+        let global_settings = match read_config(None, None) {
+            Ok((settings, _, _)) => Some(settings),
             Err(_) => None,
         };
         WorkerSession {

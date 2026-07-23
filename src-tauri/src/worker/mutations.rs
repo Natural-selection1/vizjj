@@ -1,25 +1,33 @@
 use std::fmt::Display;
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Context, Error, Result, anyhow};
+use futures_util::TryStreamExt;
 use indexmap::IndexMap;
 use itertools::Itertools;
+use jj_cli::{git_util::load_git_import_options, ui::Ui};
 use jj_lib::ref_name::{RefNameBuf, RemoteName, RemoteNameBuf, RemoteRefSymbol};
 use jj_lib::{
-    backend::{BackendError, CommitId},
+    backend::CommitId,
     commit::Commit,
-    git::{self, GitBranchPushTargets, REMOTE_NAME_FOR_LOCAL_GIT_REPO},
+    git::{
+        self, GitFetchRefExpression, GitPushOptions, GitPushRefTargets, GitSettings,
+        GitSubprocessOptions, REMOTE_NAME_FOR_LOCAL_GIT_REPO,
+    },
+    git_backend::GitBackend,
     matchers::{EverythingMatcher, FilesMatcher, Matcher},
+    merge::{Diff, Merge},
+    merged_tree::MergedTree,
     object_id::ObjectId as ObjectIdTrait,
     op_store::{RefTarget, RemoteRef, RemoteRefState},
     op_walk,
-    refs::{self, BookmarkPushAction, BookmarkPushUpdate, LocalAndRemoteRef},
+    refs::{self, LocalAndRemoteRef, RefPushAction},
     repo::Repo,
     repo_path::RepoPath,
-    revset::{self, RevsetIteratorExt},
+    revset::{self, RevsetStreamExt},
     rewrite::{self, RebaseOptions, RebasedCommit},
-    settings::UserSettings,
-    str_util::StringPattern,
+    str_util::{StringExpression, StringPattern},
 };
+use pollster::FutureExt;
 
 use crate::messages::{
     AbandonRevisions, BackoutRevisions, CheckoutRevision, CopyChanges, CreateRef, CreateRevision,
@@ -30,6 +38,9 @@ use crate::messages::{
 
 use super::Mutation;
 use super::gui_util::WorkspaceSession;
+
+type BookmarkPushUpdate = (RefNameBuf, Diff<Option<CommitId>>);
+type RemoteBranchUpdates<'a> = Vec<(&'a str, Vec<BookmarkPushUpdate>)>;
 
 macro_rules! precondition {
     ($($args:tt)*) => {
@@ -59,7 +70,7 @@ impl Mutation for AbandonRevisions {
                 .context("Failed to lookup commit")?;
             tx.repo_mut().record_abandoned_commit(&commit);
         }
-        tx.repo_mut().rebase_descendants()?;
+        tx.repo_mut().rebase_descendants().block_on()?;
 
         let transaction_description = if abandoned_ids.len() == 1 {
             format!("abandon commit {}", abandoned_ids[0].hex())
@@ -88,17 +99,29 @@ impl Mutation for BackoutRevisions {
 
         let working_copy = ws.get_commit(ws.wc_id())?;
         let reverted = ws.resolve_multiple_changes(self.ids)?;
-        let reverted_parents: Result<Vec<_>, BackendError> = reverted[0].parents().collect();
+        let reverted_parents = reverted[0].parents().block_on()?;
 
-        let old_base_tree = rewrite::merge_commit_trees(tx.repo(), &reverted_parents?)?;
-        let new_base_tree = working_copy.tree()?;
-        let old_tree = reverted[0].tree()?;
-        let new_tree = new_base_tree.merge(&old_tree, &old_base_tree)?;
+        let old_base_tree = rewrite::merge_commit_trees(tx.repo(), &reverted_parents).block_on()?;
+        let new_base_tree = working_copy.tree();
+        let old_tree = reverted[0].tree();
+        let new_tree = MergedTree::merge(Merge::from_vec(vec![
+            (
+                new_base_tree,
+                format!("{} (backout destination)", working_copy.conflict_label()),
+            ),
+            (
+                old_tree,
+                format!("{} (backed out revision)", reverted[0].conflict_label()),
+            ),
+            (old_base_tree, "parents of backed out revision".to_owned()),
+        ]))
+        .block_on()?;
 
         tx.repo_mut()
             .rewrite_commit(&working_copy)
-            .set_tree_id(new_tree.id())
-            .write()?;
+            .set_tree(new_tree)
+            .write()
+            .block_on()?;
 
         match ws.finish_transaction(tx, format!("back out commit {}", reverted[0].id().hex()))? {
             Some(new_status) => Ok(MutationResult::Updated { new_status }),
@@ -121,7 +144,9 @@ impl Mutation for CheckoutRevision {
             return Ok(MutationResult::Unchanged);
         }
 
-        tx.repo_mut().edit(ws.name().to_owned(), &edited)?;
+        tx.repo_mut()
+            .edit(ws.name().to_owned(), &edited)
+            .block_on()?;
 
         match ws.finish_transaction(tx, format!("edit commit {}", edited.id().hex()))? {
             Some(new_status) => {
@@ -148,16 +173,22 @@ impl Mutation for CreateRevision {
                 .collect_vec(),
         )?;
 
-        let parent_ids: Result<_, _> = parents_revset.iter().collect();
         let parent_commits = ws.resolve_multiple(parents_revset)?;
-        let merged_tree = rewrite::merge_commit_trees(tx.repo(), &parent_commits)?;
+        let parent_ids = parent_commits
+            .iter()
+            .map(|commit| commit.id().clone())
+            .collect();
+        let merged_tree = rewrite::merge_commit_trees(tx.repo(), &parent_commits).block_on()?;
 
         let new_commit = tx
             .repo_mut()
-            .new_commit(parent_ids?, merged_tree.id())
-            .write()?;
+            .new_commit(parent_ids, merged_tree)
+            .write()
+            .block_on()?;
 
-        tx.repo_mut().edit(ws.name().to_owned(), &new_commit)?;
+        tx.repo_mut()
+            .edit(ws.name().to_owned(), &new_commit)
+            .block_on()?;
 
         match ws.finish_transaction(tx, "new empty commit")? {
             Some(new_status) => {
@@ -196,7 +227,7 @@ impl Mutation for DescribeRevision {
             commit_builder = commit_builder.set_author(new_author);
         }
 
-        commit_builder.write()?;
+        commit_builder.write().block_on()?;
 
         match ws.finish_transaction(tx, format!("describe commit {}", described.id().hex()))? {
             Some(new_status) => Ok(MutationResult::Updated { new_status }),
@@ -215,13 +246,15 @@ impl Mutation for DuplicateRevisions {
 
         // toposort ensures that parents are duplicated first
         for clonee in clonees.into_iter().rev() {
-            let clone_parents: Result<Vec<_>, _> = clonee
+            let clone_parents: Vec<_> = clonee
                 .parents()
-                .map_ok(|parent| {
-                    if let Some(cloned_parent) = clones.get(&parent) {
+                .block_on()?
+                .iter()
+                .map(|parent| {
+                    if let Some(cloned_parent) = clones.get(parent) {
                         cloned_parent
                     } else {
-                        &parent
+                        parent
                     }
                     .id()
                     .clone()
@@ -230,9 +263,11 @@ impl Mutation for DuplicateRevisions {
             let clone = tx
                 .repo_mut()
                 .rewrite_commit(&clonee)
+                .clear_rewrite_source()
                 .generate_new_change_id()
-                .set_parents(clone_parents?)
-                .write()?;
+                .set_parents(clone_parents)
+                .write()
+                .block_on()?;
             clones.insert(clonee, clone);
         }
 
@@ -286,8 +321,8 @@ impl Mutation for InsertRevision {
 
         // rebase the target (which now has no children), then the new post-target tree atop it
         let rebased_id = target.id().hex();
-        let target = rewrite::rebase_commit(tx.repo_mut(), target, vec![after_id])?;
-        rewrite::rebase_commit(tx.repo_mut(), before, vec![target.id().clone()])?;
+        let target = rewrite::rebase_commit(tx.repo_mut(), target, vec![after_id]).block_on()?;
+        rewrite::rebase_commit(tx.repo_mut(), before, vec![target.id().clone()]).block_on()?;
 
         match ws.finish_transaction(tx, format!("rebase commit {rebased_id}"))? {
             Some(new_status) => Ok(MutationResult::Updated { new_status }),
@@ -323,7 +358,7 @@ impl Mutation for MoveRevision {
 
         // rebase the target itself
         let rebased_id = target.id().hex();
-        rewrite::rebase_commit(tx.repo_mut(), target, parent_ids)?;
+        rewrite::rebase_commit(tx.repo_mut(), target, parent_ids).block_on()?;
 
         match ws.finish_transaction(tx, format!("rebase commit {rebased_id}"))? {
             Some(new_status) => Ok(MutationResult::Updated { new_status }),
@@ -349,7 +384,7 @@ impl Mutation for MoveSource {
 
         // just rebase the target, which will also rebase its descendants
         let rebased_id = target.id().hex();
-        rewrite::rebase_commit(tx.repo_mut(), target, parent_ids)?;
+        rewrite::rebase_commit(tx.repo_mut(), target, parent_ids).block_on()?;
 
         match ws.finish_transaction(tx, format!("rebase commit {rebased_id}"))? {
             Some(new_status) => Ok(MutationResult::Updated { new_status }),
@@ -371,40 +406,56 @@ impl Mutation for MoveChanges {
         }
 
         // construct a split tree and a remainder tree by copying changes from child to parent and from parent to child
-        let from_tree = from.tree()?;
-        let from_parents: Result<Vec<_>, _> = from.parents().collect();
-        let parent_tree = rewrite::merge_commit_trees(tx.repo(), &from_parents?)?;
-        let split_tree_id = rewrite::restore_tree(&from_tree, &parent_tree, matcher.as_ref())?;
-        let split_tree = tx.repo().store().get_root_tree(&split_tree_id)?;
-        let remainder_tree_id = rewrite::restore_tree(&parent_tree, &from_tree, matcher.as_ref())?;
-        let remainder_tree = tx.repo().store().get_root_tree(&remainder_tree_id)?;
+        let from_tree = from.tree();
+        let from_parents = from.parents().block_on()?;
+        let parent_tree = rewrite::merge_commit_trees(tx.repo(), &from_parents).block_on()?;
+        let split_tree = rewrite::restore_tree(
+            &from_tree,
+            &parent_tree,
+            from.conflict_label(),
+            "parents of moved revision".to_owned(),
+            matcher.as_ref(),
+        )
+        .block_on()?;
+        let remainder_tree = rewrite::restore_tree(
+            &parent_tree,
+            &from_tree,
+            "parents of moved revision".to_owned(),
+            from.conflict_label(),
+            matcher.as_ref(),
+        )
+        .block_on()?;
 
         // abandon or rewrite source
-        let abandon_source = remainder_tree.id() == parent_tree.id();
+        let abandon_source = remainder_tree.tree_ids() == parent_tree.tree_ids();
         if abandon_source {
             tx.repo_mut().record_abandoned_commit(&from);
         } else {
             tx.repo_mut()
                 .rewrite_commit(&from)
-                .set_tree_id(remainder_tree.id().clone())
-                .write()?;
+                .set_tree(remainder_tree)
+                .write()
+                .block_on()?;
         }
 
         // rebase descendants of source, which may include destination
-        if tx.repo().index().is_ancestor(from.id(), to.id()) {
+        if tx.repo().index().is_ancestor(from.id(), to.id())? {
             let mut rebase_map = std::collections::HashMap::new();
-            tx.repo_mut().rebase_descendants_with_options(
-                &RebaseOptions::default(),
-                |old_commit, rebased_commit| {
-                    rebase_map.insert(
-                        old_commit.id().clone(),
-                        match rebased_commit {
-                            RebasedCommit::Rewritten(new_commit) => new_commit.id().clone(),
-                            RebasedCommit::Abandoned { parent_id } => parent_id,
-                        },
-                    );
-                },
-            )?;
+            tx.repo_mut()
+                .rebase_descendants_with_options(
+                    &revset::RevsetExpression::none(),
+                    &RebaseOptions::default(),
+                    |old_commit, rebased_commit| {
+                        rebase_map.insert(
+                            old_commit.id().clone(),
+                            match rebased_commit {
+                                RebasedCommit::Rewritten(new_commit) => new_commit.id().clone(),
+                                RebasedCommit::Abandoned { parent_id } => parent_id,
+                            },
+                        );
+                    },
+                )
+                .block_on()?;
             let rebased_to_id = rebase_map
                 .get(to.id())
                 .ok_or_else(|| anyhow!("descendant to_commit not found in rebase map"))?
@@ -413,14 +464,23 @@ impl Mutation for MoveChanges {
         }
 
         // apply changes to destination
-        let to_tree = to.tree()?;
-        let new_to_tree = to_tree.merge(&parent_tree, &split_tree)?;
+        let to_tree = to.tree();
+        let new_to_tree = MergedTree::merge(Merge::from_vec(vec![
+            (
+                to_tree,
+                format!("{} (move destination)", to.conflict_label()),
+            ),
+            (parent_tree, "parents of moved revision".to_owned()),
+            (split_tree, "moved changes".to_owned()),
+        ]))
+        .block_on()?;
         let description = combine_messages(&from, &to, abandon_source);
         tx.repo_mut()
             .rewrite_commit(&to)
-            .set_tree_id(new_to_tree.id().clone())
+            .set_tree(new_to_tree)
             .set_description(description)
-            .write()?;
+            .write()
+            .block_on()?;
 
         match ws.finish_transaction(
             tx,
@@ -436,7 +496,8 @@ impl Mutation for CopyChanges {
     fn execute(self: Box<Self>, ws: &mut WorkspaceSession) -> Result<MutationResult> {
         let mut tx = ws.start_transaction()?;
 
-        let from_tree = ws.resolve_single_commit(&self.from_id)?.tree()?;
+        let from = ws.resolve_single_commit(&self.from_id)?;
+        let from_tree = from.tree();
         let to = ws.resolve_single_change(&self.to_id)?;
         let matcher = build_matcher(&self.paths)?;
 
@@ -445,17 +506,25 @@ impl Mutation for CopyChanges {
         }
 
         // construct a restore tree - the destination with some portions overwritten by the source
-        let to_tree = to.tree()?;
-        let new_to_tree_id = rewrite::restore_tree(&from_tree, &to_tree, matcher.as_ref())?;
-        if &new_to_tree_id == to.tree_id() {
+        let to_tree = to.tree();
+        let new_to_tree = rewrite::restore_tree(
+            &from_tree,
+            &to_tree,
+            from.conflict_label(),
+            to.conflict_label(),
+            matcher.as_ref(),
+        )
+        .block_on()?;
+        if new_to_tree.tree_ids() == to.tree_ids() {
             Ok(MutationResult::Unchanged)
         } else {
             tx.repo_mut()
                 .rewrite_commit(&to)
-                .set_tree_id(new_to_tree_id)
-                .write()?;
+                .set_tree(new_to_tree)
+                .write()
+                .block_on()?;
 
-            tx.repo_mut().rebase_descendants()?;
+            tx.repo_mut().rebase_descendants().block_on()?;
 
             match ws.finish_transaction(tx, format!("restore into commit {}", to.id().hex()))? {
                 Some(new_status) => Ok(MutationResult::Updated { new_status }),
@@ -498,7 +567,7 @@ impl Mutation for TrackBranch {
                     );
                 }
 
-                tx.repo_mut().track_remote_bookmark(remote_ref_symbol);
+                tx.repo_mut().track_remote_bookmark(remote_ref_symbol)?;
 
                 match ws.finish_transaction(
                     tx,
@@ -528,8 +597,8 @@ impl Mutation for UntrackBranch {
             StoreRef::LocalBookmark { branch_name, .. } => {
                 // untrack all remotes
                 for (remote_ref_symbol, remote_ref) in ws.view().remote_bookmarks_matching(
-                    &StringPattern::exact(branch_name),
-                    &StringPattern::everything(),
+                    &StringPattern::exact(branch_name).to_matcher(),
+                    &StringPattern::all().to_matcher(),
                 ) {
                     if remote_ref_symbol.remote != REMOTE_NAME_FOR_LOCAL_GIT_REPO
                         && remote_ref.is_tracked()
@@ -664,13 +733,13 @@ impl Mutation for CreateRef {
             }
             StoreRef::Tag { tag_name, .. } => {
                 let tag_name_ref = RefNameBuf::from(tag_name);
-                let existing_tag = ws.view().get_tag(&tag_name_ref);
+                let existing_tag = ws.view().get_local_tag(&tag_name_ref);
                 if existing_tag.is_present() {
                     precondition!("{} already exists", tag_name_ref.as_str());
                 }
 
                 tx.repo_mut()
-                    .set_tag_target(&tag_name_ref, RefTarget::normal(commit.id().clone()));
+                    .set_local_tag_target(&tag_name_ref, RefTarget::normal(commit.id().clone()));
 
                 match ws.finish_transaction(
                     tx,
@@ -742,7 +811,7 @@ impl Mutation for DeleteRef {
                 let mut tx = ws.start_transaction()?;
 
                 tx.repo_mut()
-                    .set_tag_target(&tag_name_ref, RefTarget::absent());
+                    .set_local_tag_target(&tag_name_ref, RefTarget::absent());
 
                 match ws.finish_transaction(tx, format!("forget tag {}", tag_name_ref.as_str()))? {
                     Some(new_status) => Ok(MutationResult::Updated { new_status }),
@@ -784,7 +853,7 @@ impl Mutation for MoveRef {
                     tx,
                     format!(
                         "point {:?} to commit {}",
-                        &branch_name_ref,
+                        branch_name_ref,
                         commit.id().hex()
                     ),
                 )? {
@@ -794,13 +863,13 @@ impl Mutation for MoveRef {
             }
             StoreRef::Tag { tag_name } => {
                 let tag_name_ref = RefNameBuf::from(tag_name);
-                let old_target = ws.view().get_tag(&tag_name_ref);
+                let old_target = ws.view().get_local_tag(&tag_name_ref);
                 if old_target.is_absent() {
                     precondition!("No such tag: {:?}", tag_name_ref.as_str());
                 }
 
                 tx.repo_mut()
-                    .set_tag_target(&tag_name_ref, RefTarget::normal(commit.id().clone()));
+                    .set_local_tag_target(&tag_name_ref, RefTarget::normal(commit.id().clone()));
 
                 match ws.finish_transaction(
                     tx,
@@ -823,8 +892,7 @@ impl Mutation for GitPush {
         let mut tx = ws.start_transaction()?;
 
         // determine bookmarks to push, recording the old and new commits
-        let mut remote_branch_updates: Vec<(&str, Vec<(RefNameBuf, refs::BookmarkPushUpdate)>)> =
-            Vec::new();
+        let mut remote_branch_updates: RemoteBranchUpdates<'_> = Vec::new();
         let remote_branch_refs: Vec<_> = match &*self {
             GitPush::AllBookmarks { remote_name } => {
                 let remote_name_ref = RemoteNameBuf::from(remote_name);
@@ -928,7 +996,7 @@ impl Mutation for GitPush {
         let mut new_heads = vec![];
         for (_, branch_updates) in &mut remote_branch_updates {
             for (_, update) in branch_updates {
-                if let Some(new_target) = &update.new_target {
+                if let Some(new_target) = &update.after {
                     new_heads.push(new_target.clone());
                 }
             }
@@ -943,27 +1011,24 @@ impl Mutation for GitPush {
             old_heads.push(ws.repo().store().root_commit_id().clone());
         }
 
-        for commit in revset::walk_revs(ws.repo(), &new_heads, &old_heads)?
-            .iter()
+        let commits: Vec<_> = revset::walk_revs(ws.repo(), &new_heads, &old_heads)?
+            .stream()
             .commits(ws.repo().store())
-        {
-            let commit = commit?;
+            .try_collect()
+            .block_on()?;
+        for commit in commits {
             let mut reasons = vec![];
             if commit.description().is_empty() {
                 reasons.push("it has no description");
             }
             if commit.author().name.is_empty()
-                || commit.author().name == UserSettings::USER_NAME_PLACEHOLDER
                 || commit.author().email.is_empty()
-                || commit.author().email == UserSettings::USER_EMAIL_PLACEHOLDER
                 || commit.committer().name.is_empty()
-                || commit.committer().name == UserSettings::USER_NAME_PLACEHOLDER
                 || commit.committer().email.is_empty()
-                || commit.committer().email == UserSettings::USER_EMAIL_PLACEHOLDER
             {
                 reasons.push("it has no author and/or committer set");
             }
-            if commit.has_conflict()? {
+            if commit.has_conflict() {
                 reasons.push("it has conflicts");
             }
             if !reasons.is_empty() {
@@ -977,19 +1042,25 @@ impl Mutation for GitPush {
 
         // push to each remote
         for (remote_name, branch_updates) in remote_branch_updates.into_iter() {
-            let targets = GitBranchPushTargets { branch_updates };
-            let git_settings = ws.data.settings.git_settings()?;
-
-            ws.session.callbacks.with_git(tx.repo_mut(), &|repo, cb| {
-                git::push_branches(
-                    repo,
-                    &git_settings,
-                    RemoteName::new(remote_name),
-                    &targets,
-                    cb,
-                )?;
-                Ok(())
-            })?;
+            let targets = GitPushRefTargets {
+                bookmarks: branch_updates,
+                tags: Vec::new(),
+            };
+            let subprocess_options = git_subprocess_options(&ws.data.settings)?;
+            let mut callback = ws.session.callbacks.git_subprocess_callback();
+            let stats = git::push_refs(
+                tx.repo_mut(),
+                subprocess_options,
+                RemoteName::new(remote_name),
+                &targets,
+                callback.as_mut(),
+                &GitPushOptions::default(),
+            )?;
+            if !stats.all_ok() {
+                return Err(anyhow!(
+                    "git push rejected one or more references: {stats:?}"
+                ));
+            }
         }
 
         match ws.finish_transaction(
@@ -1026,10 +1097,9 @@ impl Mutation for GitFetch {
     fn execute(self: Box<Self>, ws: &mut WorkspaceSession) -> Result<MutationResult> {
         let mut tx = ws.start_transaction()?;
 
-        let git_repo = match ws.git_repo()? {
-            Some(git_repo) => git_repo,
-            None => precondition!("No git backend"),
-        };
+        if ws.repo().store().backend_impl::<GitBackend>().is_none() {
+            precondition!("No git backend");
+        }
 
         let mut remote_patterns = Vec::new();
         match *self {
@@ -1038,11 +1108,7 @@ impl Mutation for GitFetch {
             }
             GitFetch::AllRemotes { branch_ref } => {
                 let branch_name = branch_ref.as_branch()?;
-                for remote_name in git_repo
-                    .remotes()?
-                    .into_iter()
-                    .filter_map(|remote| remote.map(|remote| remote.to_owned()))
-                {
+                for remote_name in ws.git_remote_names() {
                     remote_patterns.push((remote_name, Some(branch_name.to_owned())));
                 }
             }
@@ -1054,24 +1120,39 @@ impl Mutation for GitFetch {
                 remote_patterns.push((remote_name, Some(branch_name.to_owned())));
             }
         }
-        let git_settings = ws.data.settings.git_settings()?;
+        let git_settings = GitSettings::from_settings(&ws.data.settings)?;
+        let remote_settings = ws.data.settings.remote_settings()?;
+        let import_options = load_git_import_options(&Ui::null(), &git_settings, &remote_settings)
+            .map_err(|err| Error::new(err.error))?;
 
         for (remote_name, pattern) in remote_patterns {
-            ws.session.callbacks.with_git(tx.repo_mut(), &|repo, cb| {
-                let mut fetcher = git::GitFetch::new(repo, &git_settings)?;
-                fetcher
-                    .fetch(
-                        RemoteName::new(&remote_name),
-                        &[pattern
-                            .clone()
-                            .map(StringPattern::exact)
-                            .unwrap_or_else(StringPattern::everything)],
-                        cb,
-                        None,
-                    )
-                    .context("failed to fetch")?;
-                Ok(())
-            })?;
+            let bookmark_expr = pattern
+                .map(StringExpression::exact)
+                .unwrap_or_else(StringExpression::all);
+            let refspecs = git::expand_fetch_refspecs(
+                RemoteName::new(&remote_name),
+                GitFetchRefExpression {
+                    bookmark: bookmark_expr,
+                    tag: StringExpression::none(),
+                },
+            )?;
+            let subprocess_options = git_subprocess_options(&ws.data.settings)?;
+            let mut callback = ws.session.callbacks.git_subprocess_callback();
+            let mut fetcher =
+                git::GitFetch::new(tx.repo_mut(), subprocess_options, &import_options)?;
+            fetcher
+                .fetch(
+                    RemoteName::new(&remote_name),
+                    refspecs,
+                    callback.as_mut(),
+                    None,
+                    None,
+                )
+                .context("failed to fetch")?;
+            fetcher
+                .import_refs()
+                .block_on()
+                .context("failed to import fetched refs")?;
         }
 
         match ws.finish_transaction(tx, "fetch from git remote(s)".to_string())? {
@@ -1084,22 +1165,19 @@ impl Mutation for GitFetch {
 // this is another case where it would be nice if we could reuse jj-cli's error messages
 impl Mutation for UndoOperation {
     fn execute(self: Box<Self>, ws: &mut WorkspaceSession) -> Result<MutationResult> {
-        let head_op = op_walk::resolve_op_with_repo(ws.repo(), "@")?; // XXX this should be behind an abstraction, maybe reused in snapshot
-        let mut parent_ops = head_op.parents();
-
-        let Some(parent_op) = parent_ops.next().transpose()? else {
-            precondition!("Cannot undo repo initialization");
-        };
-
-        if parent_ops.next().is_some() {
-            precondition!("Cannot undo a merge operation");
+        let head_op = op_walk::resolve_op_with_repo(ws.repo(), "@").block_on()?; // XXX this should be behind an abstraction, maybe reused in snapshot
+        let parent_ops = head_op.parents().block_on()?;
+        let parent_op = match parent_ops.as_slice() {
+            [] => precondition!("Cannot undo repo initialization"),
+            [parent_op] => parent_op,
+            _ => precondition!("Cannot undo a merge operation"),
         };
 
         let mut tx = ws.start_transaction()?;
         let repo_loader = tx.base_repo().loader();
-        let head_repo = repo_loader.load_at(&head_op)?;
-        let parent_repo = repo_loader.load_at(&parent_op)?;
-        tx.repo_mut().merge(&head_repo, &parent_repo)?;
+        let head_repo = repo_loader.load_at(&head_op).block_on()?;
+        let parent_repo = repo_loader.load_at(parent_op).block_on()?;
+        tx.repo_mut().merge(&head_repo, &parent_repo).block_on()?;
         let restored_view = tx.repo().view().store_view().clone();
         tx.repo_mut().set_view(restored_view);
 
@@ -1150,22 +1228,30 @@ fn build_matcher(paths: &[TreePath]) -> Result<Box<dyn Matcher>> {
     }
 }
 
+fn git_subprocess_options(
+    settings: &jj_lib::settings::UserSettings,
+) -> Result<GitSubprocessOptions> {
+    let mut options = GitSubprocessOptions::from_settings(settings)?;
+    options
+        .environment
+        .insert("GIT_TERMINAL_PROMPT".into(), "0".into());
+    Ok(options)
+}
+
 fn classify_branch_push(
     branch_name: &str,
     remote_name: &str,
     targets: LocalAndRemoteRef,
-) -> Result<Option<BookmarkPushUpdate>, String> {
-    let push_action = refs::classify_bookmark_push_action(targets);
+) -> Result<Option<Diff<Option<CommitId>>>, String> {
+    let push_action = refs::classify_ref_push_action(targets);
     match push_action {
-        BookmarkPushAction::AlreadyMatches => Ok(None),
-        BookmarkPushAction::Update(update) => Ok(Some(update)),
-        BookmarkPushAction::LocalConflicted => {
-            Err(format!("Bookmark {branch_name} is conflicted."))
-        }
-        BookmarkPushAction::RemoteConflicted => Err(format!(
+        RefPushAction::AlreadyMatches => Ok(None),
+        RefPushAction::Update(update) => Ok(Some(update)),
+        RefPushAction::LocalConflicted => Err(format!("Bookmark {branch_name} is conflicted.")),
+        RefPushAction::RemoteConflicted => Err(format!(
             "Bookmark {branch_name}@{remote_name} is conflicted. Try fetching first."
         )),
-        BookmarkPushAction::RemoteUntracked => Err(format!(
+        RefPushAction::RemoteUntracked => Err(format!(
             "Non-tracking remote bookmark {branch_name}@{remote_name} exists. Try tracking it first."
         )),
     }
