@@ -1,9 +1,12 @@
 use crate::{
+    config::read_config,
     messages::{ChangeId, CommitId, RevId},
     worker::WorkerSession,
 };
 use anyhow::Result;
+use jj_lib::workspace::Workspace;
 use jj_lib::{backend::TreeValue, repo_path::RepoPath};
+use pollster::FutureExt;
 use std::{
     fs::{self, File},
     path::PathBuf,
@@ -25,6 +28,69 @@ fn mkrepo() -> TempDir {
     archive.extract(repo_dir.path()).unwrap();
 
     repo_dir
+}
+
+#[test]
+fn fixture_uses_jj_043_index_layout() {
+    let repo = mkrepo();
+    let index = repo.path().join(".jj").join("repo").join("index");
+
+    assert!(!index.join("operations").exists());
+    assert!(index.join("segments").is_dir());
+    assert!(index.join("op_links").is_dir());
+    assert!(
+        !repo
+            .path()
+            .join(".jj")
+            .join("repo")
+            .join("config.toml")
+            .exists()
+    );
+    assert!(!repo.path().join(".jj/repo/config-id").exists());
+    assert!(!repo.path().join(".jj/workspace-config.toml").exists());
+}
+
+#[test]
+fn opens_and_reopens_jj_043_internal_git_repo() -> Result<()> {
+    opens_and_reopens_new_repo(false)
+}
+
+#[test]
+fn opens_and_reopens_jj_043_colocated_git_repo() -> Result<()> {
+    opens_and_reopens_new_repo(true)
+}
+
+fn opens_and_reopens_new_repo(colocated: bool) -> Result<()> {
+    let repo = tempdir()?;
+    let (settings, _, _) = read_config(None, None)?;
+    if colocated {
+        Workspace::init_colocated_git(&settings, repo.path()).block_on()?;
+    } else {
+        Workspace::init_internal_git(&settings, repo.path()).block_on()?;
+    }
+
+    fs::write(repo.path().join("new.txt"), "jj 0.43")?;
+    {
+        let mut session = WorkerSession::default();
+        let mut ws = session.load_directory(repo.path())?;
+        assert!(ws.import_and_snapshot(true)?);
+    }
+    {
+        let mut session = WorkerSession::default();
+        let ws = session.load_directory(repo.path())?;
+        let commit = ws.get_commit(ws.wc_id())?;
+        let value = commit
+            .tree()
+            .path_value(RepoPath::from_internal_string("new.txt")?)
+            .block_on()?;
+        assert!(value.is_resolved());
+    }
+
+    let index = repo.path().join(".jj").join("repo").join("index");
+    assert!(!index.join("operations").exists());
+    assert!(index.join("segments").is_dir());
+    assert!(index.join("op_links").is_dir());
+    Ok(())
 }
 
 fn mkid(xid: &str, cid: &str) -> RevId {
@@ -73,8 +139,9 @@ fn wc_path_is_visible() -> Result<()> {
 
     let commit = ws.get_commit(ws.wc_id())?;
     let value = commit
-        .tree()?
-        .path_value(RepoPath::from_internal_string("a.txt")?)?;
+        .tree()
+        .path_value(RepoPath::from_internal_string("a.txt")?)
+        .block_on()?;
 
     assert!(value.is_resolved());
     assert!(
@@ -138,8 +205,9 @@ fn transaction_snapshot_path_is_visible() -> Result<()> {
 
     let commit = ws.get_commit(ws.wc_id())?;
     let value = commit
-        .tree()?
-        .path_value(RepoPath::from_internal_string("new.txt")?)?;
+        .tree()
+        .path_value(RepoPath::from_internal_string("new.txt")?)
+        .block_on()?;
 
     assert!(value.is_resolved());
     assert!(
