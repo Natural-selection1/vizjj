@@ -69,6 +69,7 @@ impl AppState {
             .clone()
     }
 
+    #[allow(dead_code)]
     fn set_input(&self, window_label: &str, tx: Sender<InputResponse>) {
         self.0
             .lock()

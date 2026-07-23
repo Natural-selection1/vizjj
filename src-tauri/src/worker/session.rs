@@ -282,7 +282,10 @@ impl Session for WorkspaceSession<'_> {
                 }
                 SessionEvent::WriteConfigArray { scope, key, values } => {
                     let name: ConfigNamePathBuf = key.iter().collect();
-                    let config_env = ConfigEnv::from_environment(&Ui::null());
+                    let mut config_env = ConfigEnv::from_environment();
+                    config_env.reset_repo_path(self.workspace.repo_path());
+                    config_env.reset_workspace_path(self.workspace.workspace_root());
+                    let ui = Ui::null();
                     let path = match scope {
                         ConfigSource::User => config_env
                             .user_config_paths()
@@ -291,7 +294,14 @@ impl Session for WorkspaceSession<'_> {
                             .next()
                             .ok_or_else(|| anyhow!("No user config path found to edit"))
                             .map(|p| p.to_path_buf()),
-                        ConfigSource::Repo => Ok(self.workspace.repo_path().join("config.toml")),
+                        ConfigSource::Repo => config_env
+                            .repo_config_path(&ui)
+                            .map_err(|err| anyhow!("{err:?}"))?
+                            .ok_or_else(|| anyhow!("No repo config path found to edit")),
+                        ConfigSource::Workspace => config_env
+                            .workspace_config_path(&ui)
+                            .map_err(|err| anyhow!("{err:?}"))?
+                            .ok_or_else(|| anyhow!("No workspace config path found to edit")),
                         _ => Err(anyhow!("Can't get path for config source {scope:?}")),
                     }
                     .and_then(|path| {
@@ -305,8 +315,14 @@ impl Session for WorkspaceSession<'_> {
 
                     handler::optional!(path);
 
-                    (self.data.settings, self.data.aliases_map) =
-                        read_config(Some(self.workspace.repo_path()))?;
+                    (
+                        self.data.settings,
+                        self.data.aliases_map,
+                        self.data.fileset_aliases_map,
+                    ) = read_config(
+                        Some(self.workspace.repo_path()),
+                        Some(self.workspace.workspace_root()),
+                    )?;
                 }
             };
         }
